@@ -1752,17 +1752,18 @@ function renderFilings(){
     </details>`;
   const actionRow = (f, kind) => `
     <div class="toggle"><div><b>${esc(f.company)}</b> — ${esc(f.role)}<div class="sub small">${esc(f.reason||"")} ${esc(f.where||"")}</div></div>
-    <button class="btn ghost small" data-${kind}="${f.id}">${kind === "relaunch"? "Relaunch":"Retry"}</button></div>`;
+    <span style="display:inline-flex;gap:6px">${kind === "relaunch"? '<button class="btn small" data-markfiled="' + f.id + '">Mark as filed</button>' : ""}<button class="btn ghost small" data-${kind}="${f.id}">${kind === "relaunch"? "Relaunch":"Retry"}</button></span></div>`;
   box.innerHTML = `
   <div class="card">
     <div class="flexbetween"><p class="label" style="margin:0">Filed (${filed.length})</p>
       <button class="btn ghost small" id="btnAddFiling">+ Record a filing</button></div>
     <div id="addFilingBox"></div>
     ${FILINGS_FILTER? '<div class="notice">Showing only filings from <b>' + esc(FILINGS_FILTER) + '</b>. <a href="#" id="btnClearSrcFilter">Show all sources</a></div>' : ""}
-    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. When an application goes in, record it here — it is stored in filings.json in your repo.</p>'}
+    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. The app cannot see a submission you make in your browser — when you submit a parked lead, tap <b>Mark as filed</b> on it and it lands here, no form to fill. Filed somewhere the app never found? Use + Record a filing.</p>'}
   </div>
   <div class="grid2">
     <div class="card" style="margin:0"><p class="label">Parked (${parked.length})</p>
+      ${parked.length? '<p class="sub small" style="margin:0 0 6px">Submitted one of these in your browser? Tap <b>Mark as filed</b> on it.</p>' : ""}
       ${parked.length? parked.map(f => actionRow(f,"relaunch")).join("") : '<p class="sub">Nothing parked.</p>'}</div>
     <div class="card" style="margin:0"><p class="label">Rejected (${rejected.length})</p>
       ${rejected.length? rejected.map(f => actionRow(f,"retry")).join("") : '<p class="sub">Nothing rejected.</p>'}</div>
@@ -1783,6 +1784,23 @@ function renderFilings(){
   });
   $$("[data-relaunch]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-relaunch"), "relaunch")));
   $$("[data-retry]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-retry"), "retry")));
+  $$("[data-markfiled]").forEach(b => b.addEventListener("click", () => markFilingFiled(b.getAttribute("data-markfiled"), b)));
+}
+async function markFilingFiled(filingId, btn){
+  const f = (STORE.filings.filings||[]).find(x => x.id === filingId);
+  if(!f || f.status !== "parked") return;
+  if(btn) setBusy(btn, true, "Filing\u2026");
+  f.status = "filed";
+  f.filed_at = nowISO();
+  f.date = todayStr();
+  f.reason = "Submitted in your browser \u2014 you marked this parked lead as filed.";
+  f.check = null; /* honest: the app did not run this submission, so it stores no check of its own */
+  try{
+    await storeSave("filings", "Mark filed: "+f.company+" \u2014 "+f.role);
+    await logActivity("filing", "Marked as filed (submitted in your browser): "+f.company+" \u2014 "+f.role+" ("+(f.where||"route not noted")+").");
+    toast("Filed \u2014 "+f.company+" \u00b7 "+f.role);
+    renderDashboard();
+  }catch(e){ banner("Saving failed: "+esc(e.message||String(e)), "err"); if(btn) setBusy(btn, false); }
 }
 async function saveFiling(){
   const company = $("#afCompany").value.trim(), role = $("#afRole").value.trim();
