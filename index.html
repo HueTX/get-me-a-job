@@ -1764,10 +1764,28 @@ async function requestRework(filingId, kind){
    hand this page a read-only mail token. Tokens live ONLY in this browser (localStorage), never
    in the repo — the same rule as the GitHub token. connections.json records the provider, email
    and the app-registration client ID (an identifier, not a secret) so setup survives. */
+/* mailbox sign-in is saved PER PROFILE — scoped to the connected account's repo */
 const MAIL_KEY = "getMeAJobMail";
-function mailTokenLoad(){ try{ const raw = localStorage.getItem(MAIL_KEY); return raw? JSON.parse(raw) : null; }catch(e){ return null; } }
-function mailTokenSave(t){ try{ localStorage.setItem(MAIL_KEY, JSON.stringify(t)); }catch(e){} }
-function mailTokenClear(){ try{ localStorage.removeItem(MAIL_KEY); }catch(e){} }
+function mailKey(){
+  const a = accountLoad() || {};
+  const owner = (GH && GH.owner) || a.owner || "";
+  const repo = (GH && GH.repo) || a.repo || "";
+  return owner? MAIL_KEY + ":" + owner + "/" + repo : MAIL_KEY;
+}
+function mailTokenLoad(){
+  try{
+    const k = mailKey();
+    let raw = localStorage.getItem(k);
+    if(!raw && k !== MAIL_KEY){
+      /* one-time adoption: a token saved before per-profile scoping belongs to the profile that signs in first */
+      const legacy = localStorage.getItem(MAIL_KEY);
+      if(legacy){ localStorage.setItem(k, legacy); localStorage.removeItem(MAIL_KEY); raw = legacy; }
+    }
+    return raw? JSON.parse(raw) : null;
+  }catch(e){ return null; }
+}
+function mailTokenSave(t){ try{ localStorage.setItem(mailKey(), JSON.stringify(t)); }catch(e){} }
+function mailTokenClear(){ try{ localStorage.removeItem(mailKey()); }catch(e){} }
 function mailTokenValid(){
   const t = mailTokenLoad();
   if(!t || !t.provider) return null;
