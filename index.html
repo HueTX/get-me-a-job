@@ -1173,7 +1173,7 @@ function wizStep6(){
   wizShell(6, `
     <div class="notice info"><b>One click, no setup:</b> job sites email one-time codes and password-reset links, so the app pulls them
     from your mailbox automatically. Pick your provider, click <b>Connect mailbox</b> — Google or Microsoft run the sign-in on their own
-    page; your email password is never typed here and never stored. Codes land in your dashboard's Code Inbox by themselves.</div>
+    page; your email password is never typed here and never stored. Codes land in your dashboard's Code Inbox by themselves, and application confirmation emails are matched to your parked leads and filed automatically.</div>
     <label class="f">Provider</label>
     <select id="wMbProvider">
       <option value="" ${mb.provider===""?"selected":""}>Choose…</option>
@@ -1616,6 +1616,12 @@ function renderDashboard(){
   /* codes fetch themselves: with a live mailbox sign-in, check for new codes on every dashboard open */
   if(STORE.connections.mailbox.connected && mailTokenValid()){
     fetchMailboxCodes({ silent:true }).then(r => { if(r && r.added) renderCodes(); }).catch(() => {});
+    if(!CONFIRM_SCAN_DONE){
+      CONFIRM_SCAN_DONE = true;
+      fetchConfirmationMatches({ silent:true }).then(r => {
+        if(r && r.converted){ toast(r.converted + " application" + (r.converted === 1? "" : "s") + " auto-filed from confirmation email" + (r.converted === 1? "" : "s") + "."); renderDashboard(); }
+      }).catch(() => {});
+    }
   }
   renderActivity();
   renderSettings();
@@ -1759,11 +1765,11 @@ function renderFilings(){
       <button class="btn ghost small" id="btnAddFiling">+ Record a filing</button></div>
     <div id="addFilingBox"></div>
     ${FILINGS_FILTER? '<div class="notice">Showing only filings from <b>' + esc(FILINGS_FILTER) + '</b>. <a href="#" id="btnClearSrcFilter">Show all sources</a></div>' : ""}
-    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. The app cannot see a submission you make in your browser — when you submit a parked lead, tap <b>Mark as filed</b> on it and it lands here, no form to fill. Filed somewhere the app never found? Use + Record a filing.</p>'}
+    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. Submissions you make in your browser land here two ways: confirmation emails in your connected mailbox are matched to your parked leads and filed automatically, and any parked lead takes one tap on <b>Mark as filed</b>. Filed somewhere the app never found? Use + Record a filing.</p>'}
   </div>
   <div class="grid2">
     <div class="card" style="margin:0"><p class="label">Parked (${parked.length})</p>
-      ${parked.length? '<p class="sub small" style="margin:0 0 6px">Submitted one of these in your browser? Tap <b>Mark as filed</b> on it.</p>' : ""}
+      ${parked.length? '<p class="sub small" style="margin:0 0 6px">Confirmation emails in your connected mailbox are matched to these automatically. Submitted one with no confirmation email? Tap <b>Mark as filed</b> on it.</p>' : ""}
       ${parked.length? parked.map(f => actionRow(f,"relaunch")).join("") : '<p class="sub">Nothing parked.</p>'}</div>
     <div class="card" style="margin:0"><p class="label">Rejected (${rejected.length})</p>
       ${rejected.length? rejected.map(f => actionRow(f,"retry")).join("") : '<p class="sub">Nothing rejected.</p>'}</div>
@@ -2023,6 +2029,117 @@ async function graphFetchCodes(token){
   });
   return out;
 }
+/* --- application-confirmation matching (user opt-in): confirmation emails in the connected
+       mailbox are matched to parked leads and filed automatically, with the email itself kept as
+       the filing proof. Conservative matcher: a confirmation pattern, a distinctive company
+       match, and role disambiguation when one company has several parked leads. --- */
+const CONFIRM_RE = /thank you for applying|thanks for applying|thank you for your application|we have received your application|we've received your application|your application has been received|your application was received|your application has been submitted|your application was submitted|application received|application submitted|successfully submitted|you have successfully applied|you've successfully applied|application confirmation/i;
+const CONFIRM_EXCLUDE_RE = /job alert|jobs you may like|new jobs|recommended for you|is hiring|apply now|don'?t miss|interview invitation|recruiter/i;
+function confNorm(s){
+  return String(s || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+const CONF_GENERIC = new Set(["health","healthcare","care","systems","system","solutions","solution","group","technologies","technology","services","service","global","insurance","energy","labs","lab","medical","center","centre","hospital","university","bank","financial","consulting","partners","partner","staffing","resources","resource","network","networks","cloud","data","digital","software","inc","llc","ltd","corp","corporation","company","co","the","and","of"]);
+function confTokens(s){ return confNorm(s).split(" ").filter(w => w && !CONF_GENERIC.has(w)); }
+function confCompanyMatch(company, hayNorm){
+  const toks = confTokens(company);
+  if(!toks.length) return confNorm(company).length > 2 && hayNorm.includes(confNorm(company));
+  return toks.every(t => (" " + hayNorm + " ").includes(" " + t + " "));
+}
+function matchConfirmations(messages, parked){
+  const out = [];
+  const used = new Set();
+  const groups = {};
+  (parked || []).forEach(f => { const k = confNorm(f.company); (groups[k] = groups[k] || []).push(f); });
+  (messages || []).forEach(m => {
+    const subject = m.subject || "";
+    if(!CONFIRM_RE.test(subject + " " + (m.snippet || ""))) return;
+    if(CONFIRM_EXCLUDE_RE.test(subject)) return;
+    const hay = confNorm((m.from || "") + " " + subject + " " + (m.snippet || ""));
+    const cands = (parked || []).filter(f => !used.has(f.id) && confCompanyMatch(f.company, hay));
+    if(!cands.length) return;
+    /* a company with several parked leads at scan start always needs role evidence —
+       a generic "application received" must never guess which lead it belongs to */
+    const multi = cands.some(f => (groups[confNorm(f.company)] || []).length > 1);
+    let pick = null;
+    if(cands.length === 1 && !multi) pick = cands[0];
+    else {
+      let best = -1;
+      cands.forEach(f => {
+        const rt = confTokens(f.role).concat(confNorm(f.role).split(" ").filter(w => w.length >= 5));
+        const score = rt.filter(t => (" " + hay + " ").includes(" " + t + " ")).length;
+        if(score > best){ best = score; pick = f; }
+        else if(score === best){ pick = null; }
+      });
+      if(best <= 0) pick = null;
+    }
+    if(pick){ used.add(pick.id); out.push({ message: m, filing: pick }); }
+  });
+  return out;
+}
+async function gmailFetchConfirmations(token){
+  const q = encodeURIComponent('newer_than:14d (application OR applying OR applied OR "thank you") -"job alert"');
+  const list = await gmailApi("/messages?maxResults=25&q=" + q, token);
+  const out = [];
+  for(const m of (list.messages || [])){
+    const msg = await gmailApi("/messages/" + m.id + "?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date", token);
+    const headers = {};
+    (((msg.payload || {}).headers) || []).forEach(h => { headers[String(h.name).toLowerCase()] = h.value; });
+    let when = nowISO();
+    if(headers.date){ const d = new Date(headers.date); if(!isNaN(d)) when = d.toISOString(); }
+    out.push({ id: m.id, from: headers.from || "", subject: headers.subject || "", snippet: msg.snippet || "", received_at: when });
+  }
+  return out;
+}
+async function graphFetchConfirmations(token){
+  const data = await graphApi("/me/messages?$top=30&$orderby=receivedDateTime%20desc&$select=id,subject,from,receivedDateTime,bodyPreview", token);
+  return (data.value || []).map(msg => {
+    const ea = (msg.from && msg.from.emailAddress) || {};
+    return { id: msg.id, from: (ea.name || "") + " <" + (ea.address || "") + ">", subject: msg.subject || "", snippet: msg.bodyPreview || "", received_at: msg.receivedDateTime || nowISO() };
+  });
+}
+let CONFIRM_SCAN_DONE = false;
+async function fetchConfirmationMatches(opts){
+  opts = opts || {};
+  const mb = STORE.connections.mailbox;
+  if(!mb || !mb.connected) return { converted: 0, reason: "not-connected" };
+  if(mb.confirmation_matching === false) return { converted: 0, reason: "off" };
+  let messages = [];
+  try{
+    if(mb.provider === "Gmail"){
+      let tok = mailTokenValid();
+      if(!tok || tok.provider !== "Gmail"){
+        try{ await reauthGmail(mailClientId(mb.provider)); tok = mailTokenValid(); }
+        catch(e){ return { converted: 0, reason: "reauth" }; }
+      }
+      if(!tok) return { converted: 0, reason: "reauth" };
+      messages = await gmailFetchConfirmations(tok.access_token);
+    } else if(mb.provider === "Outlook"){
+      messages = await graphFetchConfirmations(await outlookToken());
+    } else return { converted: 0, reason: "unsupported" };
+  }catch(e){ return { converted: 0, reason: "fetch-failed" }; }
+  const seen = new Set(Array.isArray(mb.confirmation_processed)? mb.confirmation_processed : []);
+  const fresh = (messages || []).filter(m => m.id && !seen.has(m.id) && (Date.now() - new Date(m.received_at).getTime()) < 21*24*3600*1000);
+  const parked = (STORE.filings.filings || []).filter(f => f.status === "parked");
+  const matches = matchConfirmations(fresh, parked);
+  matches.forEach(({ message, filing }) => {
+    filing.status = "filed";
+    filing.filed_at = message.received_at;
+    filing.date = String(message.received_at).slice(0, 10);
+    filing.reason = "Auto-filed — the confirmation email from " + (message.from || "the employer") + " was matched to this parked lead.";
+    filing.check = { verdict: "email-confirmed", rules: [ { rule: "Filing proof", status: "pass", evidence: "Confirmation email received " + fmtDateTime(message.received_at) + ": \"" + message.subject + "\" (" + (message.from || "") + ")" } ] };
+  });
+  messages.forEach(m => { if(m.id) seen.add(m.id); });
+  mb.confirmation_processed = Array.from(seen).slice(-400);
+  mb.last_confirmation_scan_at = nowISO();
+  try{ await storeSave("connections", "Confirmation match scan"); }catch(e){}
+  if(matches.length){
+    try{ await storeSave("filings", "Auto-file from confirmation emails"); }catch(e){}
+    for(const { filing } of matches){
+      try{ await logActivity("filing", "Auto-filed from a confirmation email: " + filing.company + " — " + filing.role + "."); }catch(e){}
+    }
+  }
+  return { converted: matches.length };
+}
 async function fetchMailboxCodes(opts){
   opts = opts || {};
   const mb = STORE.connections.mailbox;
@@ -2064,10 +2181,10 @@ function renderCodes(){
   const tok = mailTokenLoad();
   const live = !!(mb.connected && tok && tok.provider === mb.provider && mailTokenValid());
   const stateLine = live
-    ? "Connected to " + esc(mb.provider) + (mb.email? " as " + esc(mb.email) : "") + " — one-time sign-in codes and password-reset codes are fetched automatically." + (mb.last_checked_at? " Last checked " + esc(fmtDateTime(mb.last_checked_at)) + "." : "")
+    ? "Connected to " + esc(mb.provider) + (mb.email? " as " + esc(mb.email) : "") + " — one-time sign-in codes and password-reset codes are fetched automatically, and application confirmation emails are matched to your parked leads and filed automatically." + (mb.last_checked_at? " Last checked " + esc(fmtDateTime(mb.last_checked_at)) + "." : "")
     : mb.connected
       ? "Your mailbox is set up, but its sign-in token is not live in this browser right now — reconnect to resume automatic fetching."
-      : "Connect your mailbox and one-time codes land here automatically — fetched by the system, never pasted by you.";
+      : "Connect your mailbox and one-time codes land here automatically, and application confirmations get matched to your parked leads — fetched by the system, never pasted by you.";
   box.innerHTML = `
   <div class="card" style="margin:0">
     <p class="label">Code inbox</p>
@@ -2075,7 +2192,7 @@ function renderCodes(){
     ${codes.length? codes.map(c => '<div class="toggle"><div><b>'+esc(c.service||"Code")+'</b> <span class="mono">'+esc(c.code)+'</span><div class="sub small">'+esc(fmtDateTime(c.received_at))+(c.note? " · "+esc(c.note) : "")+'</div></div></div>').join("") : '<p class="sub">No codes yet.</p>'}
     <div class="mt">
       ${live? '<button class="btn ghost small" id="btnCheckMail">Check mailbox now</button> ' : '<button class="btn ghost small" id="btnGoConnectMail">'+(mb.connected? "Reconnect mailbox" : "Connect mailbox")+'</button> '}
-      ${mb.connected? '<button class="btn ghost small" id="btnDiscMail">Disconnect mailbox</button>' : ""}
+      ${mb.connected? '<button class="btn ghost small" id="btnDiscMail">Disconnect mailbox</button> <button class="btn ghost small" id="btnToggleConfMatch">' + (mb.confirmation_matching === false? "Resume auto-filing from confirmation emails" : "Pause auto-filing from confirmation emails") + '</button>' : ""}
     </div>
     <details class="mt"><summary class="sub small" style="cursor:pointer">Got a code by text message instead? Add it manually</summary>
       <div class="grid2 mt">
@@ -2103,6 +2220,13 @@ function renderCodes(){
     STORE.connections.mailbox.connected = false;
     try{ await storeSave("connections", "Disconnect mailbox"); }catch(e){}
     toast("Mailbox disconnected in this browser. Codes already fetched stay in your inbox.");
+    renderCodes();
+  });
+  const tg = $("#btnToggleConfMatch");
+  if(tg) tg.addEventListener("click", async () => {
+    STORE.connections.mailbox.confirmation_matching = STORE.connections.mailbox.confirmation_matching === false? true : false;
+    try{ await storeSave("connections", "Toggle confirmation matching"); }catch(e){}
+    toast(STORE.connections.mailbox.confirmation_matching? "Automatic filing confirmations are ON — confirmation emails will be matched to your parked leads." : "Automatic filing confirmations paused — parked leads wait for Mark as filed.");
     renderCodes();
   });
   const addBtn = $("#btnAddCode");
