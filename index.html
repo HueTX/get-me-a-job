@@ -1043,6 +1043,7 @@ async function onConnect(){
     const created = await storeInit();
     await storeLoad();
     await checkEngineInstalled();
+    await reconcileZombieRun();
     const meta = accountLoad() || {};
     accountSave({ name: name || meta.name || (STORE.profile.name || ""), email: email || meta.email || (STORE.profile.email || ""),
       owner, repo, signed_out: false, created_at: meta.created_at || nowISO() });
@@ -1119,6 +1120,7 @@ async function loadStoreAndRoute(){
     await storeInit();
     await storeLoad();
     await checkEngineInstalled();
+    await reconcileZombieRun();
     const meta = accountLoad();
     if(meta && STORE.profile){
       let changed = false;
@@ -1550,6 +1552,7 @@ function startDashPoll(){
       const lp = $("#lanePanel"); if(lp && lp.innerHTML) return;
       const db = $("#dashDraftBox"); if(db && db.innerHTML) return;
       await storeLoad();
+      await reconcileZombieRun();
       renderDashboard();
     }catch(e){}
   }, 60000);
@@ -2041,6 +2044,7 @@ function renderDashboard(){
   let headline;
   if(!(saved.titles || []).length && !lastRun && !cur) headline = "Waiting for the next hunt";
   else if(runs.state === "stopped") headline = "Something went wrong";
+  else if(runLive && !(cur && cur.engine_updated_at)) headline = "Starting the hunt";
   else if(runLive){
     if(activeStage && activeStage.name === "Filing") headline = "Filing applications now";
     else if(activeStage && (activeStage.name === "Discovering" || activeStage.name === "Evaluating")) headline = "Searching for new roles";
@@ -2052,7 +2056,8 @@ function renderDashboard(){
   else headline = "Waiting for the next hunt";
   let nowViewing;
   if(engineFresh && primaryLane) nowViewing = primaryLane.name + " — " + (primaryLane.detail || "Searching employer job boards.");
-  else if(runLive) nowViewing = "Working now";
+  else if(runLive && cur && cur.engine_updated_at) nowViewing = "Working now";
+  else if(runLive) nowViewing = "Waiting for the engine to check in — nothing is being viewed yet";
   else if(runs.state === "stopped") nowViewing = "The last run stopped early";
   else if(lastRun) nowViewing = "Hunt complete — nothing is being viewed right now";
   else nowViewing = "No hunt is running right now";
@@ -2562,6 +2567,37 @@ async function laneControl(lane, action){
     const m = $("#laneCtlMsg"); if(m) m.innerHTML = '<div class="notice ok">'+esc(action === "priority"? "Priority toggled" : "Restart requested")+' for '+esc(lane.name)+' — saved in runs.json.</div>';
   }catch(e){ const m = $("#laneCtlMsg"); if(m) m.innerHTML = '<div class="notice err">'+esc(e.message||String(e))+'</div>'; }
 }
+let ZOMBIE_CHECK_AT = 0;
+async function reconcileZombieRun(){
+  try{
+    const runs = STORE && STORE.runs; if(!runs) return false;
+    const cur = runs.current_run;
+    if(runs.state !== "running" || !cur || cur.engine_updated_at || !cur.started_at) return false;
+    const ageMs = Date.now() - new Date(cur.started_at).getTime();
+    if(!(ageMs > 10 * 60 * 1000)) return false;
+    const nowMs = Date.now();
+    if(nowMs - ZOMBIE_CHECK_AT < 2 * 60 * 1000) return false;
+    ZOMBIE_CHECK_AT = nowMs;
+    let sawActive = false, apiAnswered = false;
+    try{
+      const res = await ghFetch("/repos/" + encodeURIComponent(GH.owner) + "/" + encodeURIComponent(GH.repo) + "/actions/workflows/hunt.yml/runs?per_page=5");
+      if(res.ok){
+        apiAnswered = true;
+        const j = await res.json();
+        const since = new Date(cur.started_at).getTime() - 5 * 60 * 1000;
+        sawActive = ((j && j.workflow_runs) || []).some(w => new Date(w.created_at).getTime() >= since && (w.status === "queued" || w.status === "in_progress"));
+      }
+    }catch(e){}
+    if(sawActive) return false;
+    if(!apiAnswered && ageMs < 30 * 60 * 1000) return false;
+    cur.ended_at = nowISO(); cur.failed_to_start = true;
+    (runs.history = runs.history || []).unshift(cur);
+    runs.current_run = null; runs.state = "idle";
+    await storeSave("runs", "Closed a run that never started — the engine never checked in");
+    await logActivity("run", "A hunt start never reached the engine — no workflow run checked in — so the stuck run was closed. Nothing was searched. Tap Start hunt to run it again.");
+    return true;
+  }catch(e){ return false; }
+}
 async function startRun(){
   if(!(STORE.coverage.saved.titles||[]).length){ toast("Save a coverage set first — runs use your saved set only."); renderWizard(4); return; }
   if(ENGINE_STATE === false){ toast("Install the hunt engine first — it is the worker that runs your searches."); const ec = $("#tkControls"); if(ec && ec.scrollIntoView) ec.scrollIntoView({ behavior:"smooth" }); return; }
@@ -2593,7 +2629,20 @@ async function startRun(){
     await logActivity("run", "Run start failed: GitHub dispatch returned "+res.status+" — the engine is not installed, or the token lacks the Actions permission.");
     banner("The hunt engine didn't start (GitHub "+res.status+"). "+(res.status === 404? "It may not be installed yet — install it from the Hunt engine card below — or your token lacks the Actions permission." : res.status === 403? "Your token lacks the Actions/Workflows permission on this repo." : "Give it a moment and try again."), "err");
     renderDashboard();
-  }catch(e){ banner("Could not start the run: "+esc(e.message||String(e)), "err"); }
+  }catch(e){
+    try{
+      const failed = STORE.runs.current_run;
+      if(failed && !failed.engine_updated_at){
+        failed.ended_at = nowISO(); failed.failed_to_start = true;
+        (STORE.runs.history = STORE.runs.history || []).unshift(failed);
+        STORE.runs.current_run = null; STORE.runs.state = "idle";
+        await storeSave("runs", "Run start failed — "+(e.message||String(e)));
+        await logActivity("run", "Run start failed: "+(e.message||String(e)));
+      }
+    }catch(e2){}
+    banner("Could not start the run: "+esc(e.message||String(e)), "err");
+    renderDashboard();
+  }
 }
 async function stopRun(){
   const cur = STORE.runs.current_run;
