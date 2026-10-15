@@ -944,7 +944,7 @@ async function extractFileText(file){
 }
 
 /* ---------- faithful coverage generation ----------
-   Hubert's rule (2026-10-15): the hunt may only ever use titles the
+   Standing rule: the hunt may only ever use titles the
    resume actually supports. Variants of a source title (the user's
    specified title + every title detection found on the resume) may
    differ ONLY by seniority markers and by "X Director" / "Director
@@ -1578,7 +1578,7 @@ function wizStep8(){
     <label class="f">Single-figure answer (when a form allows one number)</label>
     <input type="text" id="wSalSingle" value="${esc(s.single_figure)}" placeholder="e.g. $135,000">
     <label class="f">Contract hourly rate</label>
-    <input type="text" id="wSalContract" value="${esc(s.contract_hourly)}" placeholder="e.g. $85">`);
+    <input type="text" id="wSalContract" value="${esc(s.contract_hourly)}" placeholder="e.g. $75">`);
 }
 function collect8(){ const s = STORE.answers.salary; s.range = $("#wSalRange").value.trim(); s.single_figure = $("#wSalSingle").value.trim(); s.contract_hourly = $("#wSalContract").value.trim(); }
 function wizStep9(){
@@ -1589,7 +1589,7 @@ function wizStep9(){
     <label class="f">Minimum pay (leave blank for none)</label>
     <input type="text" id="wMinPay" value="${esc(r.minimum_pay)}" placeholder="e.g. $120,000/yr or $70/hr">
     <label class="f">Maximum pay — the top of a posting's range must not exceed this (leave blank for none)</label>
-    <input type="text" id="wMaxPay" value="${esc(r.maximum_pay||"")}" placeholder="e.g. $230,000/yr">
+    <input type="text" id="wMaxPay" value="${esc(r.maximum_pay||"")}" placeholder="e.g. $250,000/yr">
     <label class="f">Posting age limit, in days (postings older than this are out)</label>
     <input type="text" id="wMaxAge" value="${esc(r.posting_max_age_days == null? "" : r.posting_max_age_days)}" placeholder="e.g. 7 — blank for no limit">
     <div class="toggle"><div><b>Reject hands-on roles</b><div class="sub small">Skip roles whose core duties are hands-on execution — coding or building as the main output — rather than work at your level.</div></div>
@@ -2496,7 +2496,7 @@ function renderDashboard(){
     ${DASH_UI.addTitlesOpen? '<div class="tk-card" style="margin-bottom:16px;padding:18px" aria-label="Add titles"><h3 style="font-size:15px;font-weight:700;margin:0">Add titles</h3>'
       + '<p style="margin-top:4px;font-size:14px;line-height:1.55;color:var(--dim)">Paste as many titles as you need — one per line, or separated by commas. Each one joins the list below as its own title family and is searched from the next run. Blanks and titles already on the list are skipped; pasting a removed title restores it.</p>'
       + '<label style="margin-top:12px;display:block;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)" for="tkAddTitlesText">New titles</label>'
-      + '<textarea id="tkAddTitlesText" class="tk-textarea" rows="6" placeholder="Cloud Security Architect\nAI Solutions Architect, Platform Architect – AI" style="margin-top:6px"></textarea>'
+      + '<textarea id="tkAddTitlesText" class="tk-textarea" rows="6" placeholder="Operations Director\nProgram Manager, Staff Accountant" style="margin-top:6px"></textarea>'
       + '<div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px"><button type="button" class="tk-rowbtn accent" id="btnTitlesAdd" style="padding:8px 20px;font-size:14.5px">Add titles</button><button type="button" class="tk-rowbtn track" id="btnTitlesCancelAdd" style="padding:8px 20px;font-size:14.5px">Cancel</button>'
       + (addedTitles.length? '<span style="font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim)" role="status">' + addedTitles.length + ' added so far</span>' : "") + '</div></div>' : ""}
     ${DASH_UI.titlesFolded && !DASH_UI.selectingTitles? '<div style="margin-bottom:4px"><p style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--dim);margin:0" role="status">' + searchedCount + ' searched' + (searchingTitlesNow.length? ' · ' + Math.min(searchingTitlesNow.length, allTitles.length) + ' searching now' : '') + ' · ' + Math.max(0, allTitles.length - searchedCount) + ' not searched yet</p>' + titlesBar +
@@ -2802,7 +2802,7 @@ function rulesHTML(){
   <label class="f">Minimum pay</label>
   <input type="text" id="ruleMinPay" value="${esc(r.minimum_pay)}" placeholder="e.g. $120,000/yr or $70/hr">
   <label class="f">Maximum pay — top of range</label>
-  <input type="text" id="ruleMaxPay" value="${esc(r.maximum_pay||"")}" placeholder="e.g. $230,000/yr — blank for none">
+  <input type="text" id="ruleMaxPay" value="${esc(r.maximum_pay||"")}" placeholder="e.g. $250,000/yr — blank for none">
   <label class="f">Posting age limit (days)</label>
   <input type="text" id="ruleMaxAge" value="${esc(r.posting_max_age_days == null? "" : r.posting_max_age_days)}" placeholder="e.g. 7 — blank for no limit">
   <div class="toggle"><div><b>Reject hands-on roles</b><div class="sub small">Core duties are hands-on execution, not your level of work.</div></div>
