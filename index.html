@@ -135,6 +135,16 @@
     position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#23202b;color:#fff;
     padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.3);z-index:99;max-width:92vw;
   }
+
+.livepill{display:inline-flex;align-items:center}
+.livedot{width:8px;height:8px;border-radius:50%;background:#6c4bd8;display:inline-block;margin-right:6px;animation:livepulse 1.6s infinite}
+@keyframes livepulse{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
+.srcrow{display:grid;grid-template-columns:170px 1fr 92px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #eae4d6;cursor:pointer}
+.srcrow:last-child{border-bottom:none}
+.srcname{font-weight:600}
+.srccount{text-align:right;color:#8a8378;font-size:13px}
+details.fold summary{cursor:pointer;color:#6c4bd8;font-weight:600;margin:10px 0 4px}
+.dashh{margin:0;font-size:26px}
 </style>
 </head>
 <body>
@@ -1197,75 +1207,134 @@ function renderDashboard(){
   const counts = { filed:0, parked:0, rejected:0 };
   todays.forEach(f => { if(counts[f.status] != null) counts[f.status]++; });
   const runs = STORE.runs;
-  const evaluated = todays.length + ((runs.current_run && runs.current_run.evaluated_extra) || 0);
+  const cur = runs.current_run;
+  const evaluated = todays.length + ((cur && cur.evaluated_extra) || 0);
   const saved = STORE.coverage.saved || { titles:[], lanes:[] };
   const comp = completeness();
 
-  const countCard = (label, n, pillCls) => `
+  /* NOW SEARCHING pill — only while the hunt engine is genuinely live (reported within 15 min) */
+  const engineFresh = !!(runs.state === "running" && cur && cur.engine_updated_at &&
+    (Date.now() - new Date(cur.engine_updated_at).getTime()) < 15*60*1000);
+  const searchingLanes = engineFresh? (cur.lanes||[]).filter(l => l.status === "searching").map(l => l.name) : [];
+  const livePill = engineFresh
+    ? '<span class="pill violet livepill"><span class="livedot"></span>NOW SEARCHING' +
+      (searchingLanes.length? " — "+esc(searchingLanes.slice(0,2).join(", "))+(searchingLanes.length>2? " +"+(searchingLanes.length-2)+" more":"") : "") + '</span>'
+    : "";
+
+  const pillRow = list => {
+    const map = {};
+    list.forEach(f => { const s = f.where || "Not noted"; map[s] = (map[s]||0)+1; });
+    const entries = Object.entries(map).sort((a,b) => b[1]-a[1]);
+    if(!entries.length) return '<span class="pill grey">none yet today</span>';
+    let h = entries.slice(0,3).map(([k,v]) => '<span class="pill grey">'+esc(k)+' · '+v+'</span>').join(" ");
+    const rest = entries.slice(3).reduce((a,[,v]) => a+v, 0);
+    if(rest) h += ' <span class="pill grey">All other · '+rest+'</span>';
+    return h;
+  };
+  const countCard = (label, n, pillCls, pillsHtml) => `
     <div class="card" style="text-align:center;margin:0">
       <p class="label">${label}</p>
       <div style="width:104px;height:104px;margin:6px auto;border-radius:50%;border:3px solid var(--accent-soft);display:flex;align-items:center;justify-content:center">
         <span class="big">${n}</span>
       </div>
-      <span class="pill ${pillCls}">${label}</span>
+      <div>${pillsHtml}</div>
     </div>`;
 
-  const stages = ["Preparing","Discovering","Evaluating","Filing","Closeout"].map((s,i) => {
-    let state = "Waiting", cls = "grey";
-    if(runs.state === "running"){ state = i < 2? "Active" : "Queued"; cls = i < 2? "amber" : "grey"; }
-    if(runs.state === "idle" && runs.history && runs.history.length){ state = "Last run finished"; cls = "green"; }
-    if(runs.state === "stopped"){ state = "Stopped"; cls = "red"; }
-    return '<div class="toggle"><div><b>'+s+'</b></div><span class="pill '+cls+'">'+state+'</span></div>';
+  /* stages — engine-reported when present, derived from run state otherwise */
+  const stageDefs = [
+    ["Preparing", "Your saved titles, lanes and rules are loaded for this run."],
+    ["Discovering", "The hunt engine searches your saved employers' job boards."],
+    ["Evaluating", "Each posting found is checked against your saved titles and rules."],
+    ["Filing", "Ready-to-apply leads are queued under Parked — you submit in your browser, then record them as filed."],
+    ["Closeout", "Results are saved back to your repo and the run is closed."]
+  ];
+  const engineStages = {};
+  if(cur && Array.isArray(cur.stages)) cur.stages.forEach(s => { engineStages[s.name] = s; });
+  const stageChip = s => ({ done:["Done","green"], active:["Active","amber"], queued:["Queued","grey"], stopped:["Stopped","red"] }[s] || ["Queued","grey"]);
+  const stages = stageDefs.map(([name, fallbackDetail], i) => {
+    let state = "queued", detail = fallbackDetail;
+    const es = engineStages[name];
+    if(es){ state = es.state || "queued"; if(es.detail) detail = es.detail; }
+    else if(runs.state === "running"){ state = i < 2? "active" : "queued"; if(i === 1) detail = "Waiting for the hunt engine to report — if this persists, the engine may not be installed yet."; }
+    else if(runs.state === "stopped"){ state = "stopped"; }
+    else if(runs.history && runs.history.length){ state = "done"; detail = "Completed in the last run."; }
+    const [label, cls] = stageChip(state);
+    return '<div class="toggle"><div><b>'+name+'</b><div class="sub small">'+esc(detail)+'</div></div><span class="pill '+cls+'">'+label+'</span></div>';
   }).join("");
 
+  /* filings by source — bar fill is exactly the printed share */
+  const allF = STORE.filings.filings || [];
+  const srcMap = {};
+  allF.forEach(f => { const s = f.where || "Not noted"; srcMap[s] = (srcMap[s]||0)+1; });
+  const srcRows = Object.entries(srcMap).sort((a,b) => b[1]-a[1]).map(([s,n]) => {
+    const pct = allF.length? Math.round(100*n/allF.length) : 0;
+    return '<div class="srcrow" data-src="'+esc(s)+'"><span class="srcname">'+esc(s)+'</span><span class="bar"><i style="width:'+pct+'%"></i></span><span class="srccount">'+n+' · '+pct+'%</span></div>';
+  }).join("");
+
+  const laneStatusText = l => {
+    const entry = ((cur && cur.lanes) || []).find(x => x.name === l.name);
+    if(!entry || !entry.status) return "";
+    return { searching:"Searching now…", done:"Complete", manual:"Browser lane — see lane detail", skipped:"Skipped this run" }[entry.status] || "";
+  };
   const laneCards = (saved.lanes||[]).map((l,i) => `
     <div class="card lane-card" data-lane="${i}" style="margin:0">
       <div class="flexbetween"><b>${esc(l.name)}</b><span class="pill ${l.kind==="sector"? "violet":"grey"}">${esc(l.kind)}</span></div>
       <p class="sub small" style="margin:6px 0 0">${l.sites.length} site${l.sites.length===1?"":"s"}</p>
       <div class="bar"><i style="width:${laneProgress(l)}%"></i></div>
-      <p class="sub small">${laneProgress(l)}% covered</p>
+      <p class="sub small">${laneProgress(l)}% covered${laneStatusText(l)? " · "+esc(laneStatusText(l)) : ""}</p>
     </div>`).join("");
 
   view().innerHTML = `
   ${comp.complete? "" : '<div class="notice warn">Your profile is '+comp.done+' of '+comp.total+' sections complete. <a href="#" id="lnkFinishProfile">Finish setup →</a></div>'}
-  <p class="label">Today · ${esc(todayStr())}</p>
+  <div class="flexbetween">
+    <div>
+      <h2 class="dashh">Your job hunt</h2>
+      <p class="sub" style="margin:4px 0 0">${esc(todayStr())} · ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? " · coverage saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}</p>
+    </div>
+    <div style="text-align:right">
+      ${livePill}
+      <div class="mt">${runs.state === "running"
+        ? '<button class="btn danger" id="btnStopRun">Stop</button>'
+        : '<button class="btn" id="btnStartRun">Start run</button>'}</div>
+    </div>
+  </div>
+  <p class="label mt">Today · ${esc(todayStr())}</p>
   <div class="grid4">
-    ${countCard("Filed", counts.filed, "green")}
-    ${countCard("Parked", counts.parked, "amber")}
-    ${countCard("Rejected", counts.rejected, "red")}
-    ${countCard("Evaluated", evaluated, "violet")}
+    ${countCard("Filed", counts.filed, "green", pillRow(todays.filter(f => f.status === "filed")))}
+    ${countCard("Parked", counts.parked, "amber", pillRow(todays.filter(f => f.status === "parked")))}
+    ${countCard("Rejected", counts.rejected, "red", pillRow(todays.filter(f => f.status === "rejected")))}
+    ${countCard("Evaluated", evaluated, "violet", '<span class="pill violet">postings checked</span>')}
   </div>
   <div class="card mt">
-    <div class="flexbetween">
-      <div><p class="label">Hunt run</p>
-      <b>${runs.state === "running"? "Run in progress" : runs.state === "stopped"? "Stopped" : "Idle"}</b>
-      <span class="sub small">${runs.current_run? " · started "+esc(fmtDateTime(runs.current_run.started_at)) : ""}</span></div>
-      <div>
-        ${runs.state === "running"
-          ? '<button class="btn danger" id="btnStopRun">Stop</button>'
-          : '<button class="btn" id="btnStartRun">Start run</button>'}
-      </div>
-    </div>
+    <p class="label">Hunt run</p>
+    <b>${runs.state === "running"? "Run in progress" : runs.state === "stopped"? "Stopped" : "Idle"}</b>
+    <span class="sub small">${cur? " · started "+esc(fmtDateTime(cur.started_at)) : ""}</span>
     ${stages}
     <p class="sub small">Runs work from your saved coverage only — ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? ", saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}.</p>
   </div>
+  <div class="card mt">
+    <p class="label">Filings by source</p>
+    ${srcRows || '<p class="sub">No filings yet — sources appear here as applications and leads are recorded.</p>'}
+  </div>
+  <div id="filingsBox" class="mt"></div>
   <p class="label">Search coverage</p>
   <div id="laneGrid" class="grid3">${laneCards || '<div class="card" style="margin:0"><p class="sub">No saved coverage yet. <a href="#" id="lnkMakeCoverage">Generate &amp; save coverage →</a></p></div>'}</div>
   <div id="lanePanel"></div>
-  <div class="grid2 mt">
-    <div class="card" style="margin:0">
-      <p class="label">Titles searched (${saved.titles.length})</p>
+  <div class="card mt">
+    <div class="flexbetween">
+      <p class="label" style="margin:0">Titles in this hunt (${saved.titles.length})</p>
+      <div><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button> <button class="btn ghost small" id="btnRegenCoverage">Regenerate titles &amp; lanes</button></div>
+    </div>
+    <details class="fold"><summary>Show all titles</summary>
       <div>${saved.titles.map(t=>'<span class="chip">'+esc(t)+'</span>').join("") || '<span class="sub">None saved yet.</span>'}</div>
-      <div class="mt"><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button> <button class="btn ghost small" id="btnRegenCoverage">Regenerate titles &amp; lanes</button></div>
-      <p class="sub small" style="margin-top:6px">Regenerate builds a fresh draft from your title and the career field detected in your resume. Nothing changes until you save the draft.</p>
-    </div>
-    <div class="card" style="margin:0">
-      <p class="label">Your rules</p>
-      <div id="rulesBox">${rulesHTML()}</div>
-    </div>
+    </details>
+    <p class="sub small">Regenerate builds a fresh draft from your title and the career field detected in your resume. Nothing changes until you save the draft.</p>
   </div>
   <div id="dashDraftBox" class="mt"></div>
-  <div id="filingsBox" class="mt"></div>
+  <div class="card mt">
+    <p class="label">Your rules</p>
+    <div id="rulesBox">${rulesHTML()}</div>
+  </div>
   <div class="grid2 mt">
     <div id="codesBox"></div>
     <div id="activityBox"></div>
@@ -1289,6 +1358,11 @@ function renderDashboard(){
   const start = $("#btnStartRun"); if(start) start.addEventListener("click", startRun);
   const stop = $("#btnStopRun"); if(stop) stop.addEventListener("click", stopRun);
   $$("#laneGrid .lane-card").forEach(card => card.addEventListener("click", () => openLanePanel(parseInt(card.getAttribute("data-lane"),10))));
+  $$(".srcrow").forEach(r => r.addEventListener("click", () => {
+    FILINGS_FILTER = r.getAttribute("data-src") || "";
+    renderFilings();
+    const fb = $("#filingsBox"); if(fb && fb.scrollIntoView) fb.scrollIntoView({ behavior:"smooth" });
+  }));
   bindRules();
   renderFilings();
   renderCodes();
@@ -1382,10 +1456,12 @@ function bindRules(){
 }
 
 /* ---------- filings, parked / rejected, workaround chains ---------- */
+let FILINGS_FILTER = "";
 const WORKAROUND_CHAIN = ["Try the employer's own site for the same role", "Try an alternate route for the same posting", "Try an alternate posting of the same role"];
 function renderFilings(){
   const box = $("#filingsBox"); if(!box) return;
-  const all = STORE.filings.filings || [];
+  const allRaw = STORE.filings.filings || [];
+  const all = FILINGS_FILTER? allRaw.filter(f => (f.where || "Not noted") === FILINGS_FILTER) : allRaw;
   const filed = all.filter(f => f.status === "filed");
   const parked = all.filter(f => f.status === "parked");
   const rejected = all.filter(f => f.status === "rejected");
@@ -1410,6 +1486,7 @@ function renderFilings(){
     <div class="flexbetween"><p class="label" style="margin:0">Filed (${filed.length})</p>
       <button class="btn ghost small" id="btnAddFiling">+ Record a filing</button></div>
     <div id="addFilingBox"></div>
+    ${FILINGS_FILTER? '<div class="notice">Showing only filings from <b>' + esc(FILINGS_FILTER) + '</b>. <a href="#" id="btnClearSrcFilter">Show all sources</a></div>' : ""}
     ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. When an application goes in, record it here — it is stored in filings.json in your repo.</p>'}
   </div>
   <div class="grid2">
@@ -1418,6 +1495,7 @@ function renderFilings(){
     <div class="card" style="margin:0"><p class="label">Rejected (${rejected.length})</p>
       ${rejected.length? rejected.map(f => actionRow(f,"retry")).join("") : '<p class="sub">Nothing rejected.</p>'}</div>
   </div>`;
+  const cf = $("#btnClearSrcFilter"); if(cf) cf.addEventListener("click", e => { e.preventDefault(); FILINGS_FILTER = ""; renderFilings(); });
   const add = $("#btnAddFiling");
   if(add) add.addEventListener("click", () => {
     $("#addFilingBox").innerHTML = `
