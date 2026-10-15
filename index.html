@@ -305,7 +305,7 @@ function defaultsFor(key){
         travel:"", relocate:"", how_heard:"" },
       skill_years:{}, updated_at:"" };
     case "connections": return { linkedin:{ profile_url:"", connected:false, connected_at:"" },
-      mailbox:{ provider:"", email:"", connected:false, connected_at:"" }, updated_at:"" };
+      mailbox:{ provider:"", email:"", client_id:"", connected:false, connected_at:"", last_checked_at:"" }, updated_at:"" };
     case "runs": return { state:"idle", current_run:null, history:[], lane_controls:[], requests:[], updated_at:"" };
     case "filings": return { filings:[], updated_at:"" };
     case "codes": return { codes:[], updated_at:"" };
@@ -633,11 +633,17 @@ function generateLanes(detection, targetEmployers, titleField){
     lanes.push({ id: uid("lane"), name: ind + " employers", kind:"sector",
       sites: pool.length? pool : ["Employers in the " + ind + " sector (add target employers in the wizard)"] });
   });
-  /* no industry detected: fall back to the career field named in the title itself */
-  if(!lanes.length && titleField){
-    const pool = uniq([].concat(targetEmployers||[], (detection.employers||[]).slice(0,8)));
-    lanes.push({ id: uid("lane"), name: titleField + " employers", kind:"sector",
-      sites: pool.length? pool : ["Employers in the " + titleField + " field (add target employers in the wizard)"] });
+  /* the career field named in the title ALWAYS gets its lane, first in the grid: if none of the
+     detected industries corresponds to it, prepend a field lane — a healthcare title must never
+     end up with only some other field's lane showing */
+  if(titleField){
+    const stem = titleField.toLowerCase().slice(0, 6);
+    const hasFieldLane = lanes.some(l => l.kind === "sector" && l.name.toLowerCase().includes(stem));
+    if(!hasFieldLane){
+      const pool = uniq([].concat(targetEmployers||[], (detection.employers||[]).slice(0,8)));
+      lanes.unshift({ id: uid("lane"), name: titleField + " employers", kind:"sector",
+        sites: pool.length? pool : ["Employers in the " + titleField + " field (add target employers in the wizard)"] });
+    }
   }
   /* one lane for the target employer list itself when no sector matched */
   if(!lanes.length && (targetEmployers||[]).length){
@@ -771,7 +777,7 @@ async function onConnect(){
   }
 }
 function disconnect(){
-  ghClear(); STORE = null;
+  ghClear(); mailTokenClear(); STORE = null;
   banner("Disconnected. Your token was cleared from this browser — your data stays in your repo, untouched.", "ok");
   renderConnect(null, "");
 }
@@ -806,7 +812,10 @@ function wizShell(step, inner){
   }).join("");
   view().innerHTML = `
   <div class="card">
-    <p class="label">Set up your hunt · Step ${step} of 11</p>
+    <div class="flexbetween">
+      <p class="label">Set up your hunt · Step ${step} of 11</p>
+      <button class="btn ghost small" id="wizExit" type="button">✕ Exit to dashboard</button>
+    </div>
     <h2 style="margin:0 0 4px;font-size:21px">${esc(WIZ_STEPS[step-1])}</h2>
     <div class="steps mt">${dots}</div>
     <div id="wizBody">${inner}</div>
@@ -818,6 +827,7 @@ function wizShell(step, inner){
   </div>`;
   $("#wizBack").addEventListener("click", ()=> renderWizard(Math.max(1, step-1)));
   $("#wizNext").addEventListener("click", ev => wizNext(step, ev.currentTarget));
+  const wx = $("#wizExit"); if(wx) wx.addEventListener("click", () => renderDashboard());
 }
 function renderWizard(step){
   WIZ = step;
@@ -986,21 +996,32 @@ function collect4(){ const t = $("#wTitle"); if(t) STORE.coverage.specified_titl
 function wizStep5(){
   const li = STORE.connections.linkedin;
   wizShell(5, `
-    <div class="notice info"><b>How LinkedIn connect works:</b> you sign in with LinkedIn itself — this page never asks for,
-    sees, or stores your LinkedIn password. Paste your profile URL here so applications can carry it, and mark the connection once you
-    have signed in with LinkedIn in your browser.</div>
+    <div class="notice info"><b>How LinkedIn connect works:</b> LinkedIn keeps its sign-in on its own page — this app never asks for,
+    sees, or stores your LinkedIn password. Use the button to sign in with LinkedIn in a new tab; your browser stays signed in there,
+    and that same signed-in browser is what applications run in.</div>
+    <div class="mt"><button class="btn" id="btnLiSignIn" type="button">Sign in with LinkedIn</button>
+      <span class="sub small">Opens linkedin.com — sign in there, then come back to this tab.</span></div>
     <label class="f">LinkedIn profile URL</label>
     <input type="url" id="wLiUrl" value="${esc(li.profile_url)}" placeholder="https://www.linkedin.com/in/your-name">
-    <div class="toggle"><div><b>Connected with LinkedIn</b><div class="sub small">Switch on after you have signed in with LinkedIn in this browser.</div></div>
+    <div class="toggle"><div><b>Connected with LinkedIn</b><div class="sub small">Switch on once you have signed in with LinkedIn in this browser.</div></div>
       <label class="switch"><input type="checkbox" id="wLiConn" ${li.connected? "checked":""}><span class="slider"></span></label></div>`);
+  const b = $("#btnLiSignIn");
+  if(b) b.addEventListener("click", () => {
+    window.open("https://www.linkedin.com/login", "_blank", "noopener");
+    toast("LinkedIn opened in a new tab — sign in there, then switch on “Connected” here.");
+  });
 }
 function collect5(){ const li = STORE.connections.linkedin; li.profile_url = $("#wLiUrl").value.trim(); const on = $("#wLiConn").checked; if(on && !li.connected) li.connected_at = nowISO(); li.connected = on; }
 function wizStep6(){
   const mb = STORE.connections.mailbox;
+  const tok = mailTokenLoad();
+  const liveHere = !!(mb.connected && tok && tok.provider === mb.provider);
+  const appUrl = esc((location.origin || "") + (location.pathname || ""));
   wizShell(6, `
-    <div class="notice info"><b>Why a mailbox:</b> job sites send one-time sign-in codes and password-reset links to your email.
-    Connect Gmail or Outlook <b>with the provider</b> — sign-in happens on their page; your email password is never typed here.
-    When a code arrives, paste it into the <b>Code Inbox</b> on your dashboard and it is kept in <span class="mono">codes.json</span> in your repo.</div>
+    <div class="notice info"><b>Why a mailbox:</b> job sites email one-time sign-in codes and password-reset links.
+    Connect yours <b>with the provider</b> — Google or Microsoft run the sign-in on their own page; your email password is
+    never typed here and never stored. After that, codes are <b>fetched automatically</b> into your dashboard's Code Inbox —
+    nobody pastes anything.</div>
     <label class="f">Provider</label>
     <select id="wMbProvider">
       <option value="" ${mb.provider===""?"selected":""}>Choose…</option>
@@ -1010,10 +1031,54 @@ function wizStep6(){
     </select>
     <label class="f">Mailbox email address</label>
     <input type="email" id="wMbEmail" value="${esc(mb.email)}" placeholder="you@example.com">
-    <div class="toggle"><div><b>Connected with my provider</b><div class="sub small">Switch on after completing sign-in on the provider's page.</div></div>
-      <label class="switch"><input type="checkbox" id="wMbConn" ${mb.connected? "checked":""}><span class="slider"></span></label></div>`);
+    <div id="mbSetupGmail">
+      <details><summary class="sub" style="cursor:pointer"><b>One-time Gmail setup (free, about 5 minutes)</b> — the app needs your own Google app registration so Google lets it read your mail with your permission</summary>
+      <ol class="sub" style="line-height:1.6;margin:8px 0 0;padding-left:20px">
+        <li>Open <span class="mono">console.cloud.google.com</span> and create a project (any name).</li>
+        <li>APIs &amp; Services → Library → enable the <b>Gmail API</b>.</li>
+        <li>APIs &amp; Services → OAuth consent screen → External → add your own email as a test user.</li>
+        <li>Credentials → Create credentials → OAuth client ID → type <b>Web application</b> → under “Authorized JavaScript origins” add <span class="mono">${appUrl}</span> → Create.</li>
+        <li>Copy the <b>client ID</b> and paste it below — it identifies your app registration; it is not a password.</li>
+      </ol></details>
+    </div>
+    <div id="mbSetupOutlook">
+      <details><summary class="sub" style="cursor:pointer"><b>One-time Outlook setup (free, about 5 minutes)</b> — the app needs your own Microsoft app registration so Microsoft lets it read your mail with your permission</summary>
+      <ol class="sub" style="line-height:1.6;margin:8px 0 0;padding-left:20px">
+        <li>Open <span class="mono">portal.azure.com</span> → App registrations → New registration (any name; account type: personal Microsoft accounts).</li>
+        <li>Platform: <b>Single-page application</b> → Redirect URI: <span class="mono">${appUrl}</span> → Register.</li>
+        <li>Copy the <b>Application (client) ID</b> from the overview page and paste it below — it identifies your app registration; it is not a password.</li>
+      </ol></details>
+    </div>
+    <label class="f">Client ID from your provider app registration</label>
+    <input type="text" id="wMbClientId" value="${esc(mb.client_id||"")}" placeholder="Paste the client ID from the one-time setup above">
+    <div class="mt"><button class="btn" id="btnMbConnect" type="button">${liveHere? "Reconnect mailbox" : "Connect mailbox"}</button>
+      <span class="sub small" id="mbConnState">${mb.connected? "Connected"+(mb.email? " as "+esc(mb.email) : "")+(mb.last_checked_at? " · last code check "+esc(fmtDateTime(mb.last_checked_at)) : "") : "Not connected yet."}</span></div>
+    <p class="sub small mt">Sign-in tokens stay in this browser only (the same rule as your GitHub token) — never in your repo. If a token expires, reconnecting is one click. Automatic fetching supports Gmail and Outlook; other providers keep a manual fallback in the Code Inbox.</p>`);
+  const showSetup = () => {
+    const p = $("#wMbProvider").value;
+    $("#mbSetupGmail").style.display = p === "Gmail"? "" : "none";
+    $("#mbSetupOutlook").style.display = p === "Outlook"? "" : "none";
+  };
+  $("#wMbProvider").addEventListener("change", showSetup); showSetup();
+  $("#btnMbConnect").addEventListener("click", async ev => {
+    collect6();
+    const btn = ev.currentTarget; setBusy(btn, true, "Opening provider sign-in…");
+    try{
+      const email = await connectMailbox();
+      const r = await fetchMailboxCodes({});
+      $("#mbConnState").textContent = "Connected as "+(email || STORE.connections.mailbox.email || "")+" — codes now fetch automatically"+(r && r.added? " ("+r.added+" code"+(r.added===1?"":"s")+" already fetched)" : "")+".";
+      toast("Mailbox connected. Codes will be fetched automatically.");
+    }catch(e){ banner("Mailbox connect failed: "+esc(e.message||String(e)), "err"); }
+    setBusy(btn, false);
+  });
 }
-function collect6(){ const mb = STORE.connections.mailbox; mb.provider = $("#wMbProvider").value; mb.email = $("#wMbEmail").value.trim(); const on = $("#wMbConn").checked; if(on && !mb.connected) mb.connected_at = nowISO(); mb.connected = on; }
+function collect6(){
+  const mb = STORE.connections.mailbox;
+  const p = $("#wMbProvider"), e = $("#wMbEmail"), c = $("#wMbClientId");
+  if(p) mb.provider = p.value;
+  if(e) mb.email = e.value.trim();
+  if(c) mb.client_id = c.value.trim();
+}
 function wizStep7(){
   const e = STORE.profile.employers;
   wizShell(7, `
@@ -1227,6 +1292,10 @@ function renderDashboard(){
   bindRules();
   renderFilings();
   renderCodes();
+  /* codes fetch themselves: with a live mailbox sign-in, check for new codes on every dashboard open */
+  if(STORE.connections.mailbox.connected && mailTokenValid()){
+    fetchMailboxCodes({ silent:true }).then(r => { if(r && r.added) renderCodes(); }).catch(() => {});
+  }
   renderActivity();
   renderSettings();
 }
@@ -1400,27 +1469,253 @@ async function requestRework(filingId, kind){
   }catch(e){ banner("Could not record that request: "+esc(e.message||String(e)), "err"); }
 }
 
+/* ---------- mailbox sign-in + automatic code fetching ----------
+   The user signs in with their provider: Google/Microsoft run the sign-in on their own pages and
+   hand this page a read-only mail token. Tokens live ONLY in this browser (localStorage), never
+   in the repo — the same rule as the GitHub token. connections.json records the provider, email
+   and the app-registration client ID (an identifier, not a secret) so setup survives. */
+const MAIL_KEY = "getMeAJobMail";
+function mailTokenLoad(){ try{ const raw = localStorage.getItem(MAIL_KEY); return raw? JSON.parse(raw) : null; }catch(e){ return null; } }
+function mailTokenSave(t){ try{ localStorage.setItem(MAIL_KEY, JSON.stringify(t)); }catch(e){} }
+function mailTokenClear(){ try{ localStorage.removeItem(MAIL_KEY); }catch(e){} }
+function mailTokenValid(){
+  const t = mailTokenLoad();
+  if(!t || !t.provider) return null;
+  if(t.provider === "Outlook") return t; /* MSAL manages its own token lifecycle */
+  return (t.access_token && (!t.expires_at || Date.now() < t.expires_at - 30000))? t : null;
+}
+function loadScriptOnce(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = src; s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Could not load " + src));
+    (document.head || document.documentElement).appendChild(s);
+  });
+}
+/* --- Gmail (Google Identity Services token client; read-only scope) --- */
+async function ensureGis(){
+  if(window.google && google.accounts && google.accounts.oauth2) return;
+  await loadScriptOnce("https://accounts.google.com/gsi/client");
+  if(!(window.google && google.accounts && google.accounts.oauth2)) throw new Error("Google sign-in did not load — check your connection and try again.");
+}
+function gisToken(clientId, prompt){
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: "https://www.googleapis.com/auth/gmail.readonly",
+      callback: resp => { if(resp && resp.access_token) resolve(resp); else reject(new Error("Google sign-in was cancelled or did not return a token.")); },
+      error_callback: err => reject(new Error("Google sign-in failed (" + ((err && err.type) || "unknown") + ")."))
+    });
+    client.requestAccessToken({ prompt: prompt || "" });
+  });
+}
+async function connectGmail(clientId){
+  await ensureGis();
+  const token = await gisToken(clientId, "consent");
+  mailTokenSave({ provider:"Gmail", access_token: token.access_token, expires_at: Date.now() + (token.expires_in || 3600) * 1000 });
+  const prof = await gmailApi("/profile");
+  const mb = STORE.connections.mailbox;
+  if(prof && prof.emailAddress) mb.email = prof.emailAddress;
+  mb.connected = true; mb.connected_at = nowISO();
+  await storeSave("connections", "Connect Gmail mailbox");
+  return mb.email;
+}
+async function reauthGmail(clientId){
+  await ensureGis();
+  const token = await gisToken(clientId, "");
+  mailTokenSave({ provider:"Gmail", access_token: token.access_token, expires_at: Date.now() + (token.expires_in || 3600) * 1000 });
+}
+function gmailApi(path, token){
+  const t = token || (mailTokenLoad() || {}).access_token;
+  return fetch("https://gmail.googleapis.com/gmail/v1/users/me" + path, { headers:{ Authorization: "Bearer " + t } })
+    .then(r => { if(!r.ok) throw new Error("Gmail API answered " + r.status + " — reconnect your mailbox if this persists."); return r.json(); });
+}
+/* --- Outlook (MSAL public client; read-only scopes; PKCE, no secret) --- */
+let MSAL_APP = null;
+async function ensureMsal(clientId){
+  if(!(window.msal && msal.PublicClientApplication)){
+    await loadScriptOnce("https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.0/lib/msal-browser.min.js");
+  }
+  if(!(window.msal && msal.PublicClientApplication)) throw new Error("Microsoft sign-in did not load — check your connection and try again.");
+  if(!MSAL_APP){
+    MSAL_APP = new msal.PublicClientApplication({
+      auth: { clientId: clientId, redirectUri: location.href.split("#")[0].split("?")[0] },
+      cache: { cacheLocation: "localStorage" }
+    });
+    await MSAL_APP.initialize();
+  }
+  return MSAL_APP;
+}
+async function connectOutlook(clientId){
+  const app = await ensureMsal(clientId);
+  const login = await app.loginPopup({ scopes: ["User.Read", "Mail.Read"] });
+  const account = login.account || app.getAllAccounts()[0];
+  if(account) app.setActiveAccount(account);
+  const mb = STORE.connections.mailbox;
+  if(account && account.username) mb.email = account.username;
+  mb.connected = true; mb.connected_at = nowISO();
+  mailTokenSave({ provider:"Outlook", access_token:"msal", expires_at: 0 });
+  await storeSave("connections", "Connect Outlook mailbox");
+  return mb.email;
+}
+async function outlookToken(){
+  const mb = STORE.connections.mailbox;
+  const app = await ensureMsal(mb.client_id);
+  const account = app.getActiveAccount() || app.getAllAccounts()[0];
+  if(!account) throw new Error("Outlook session expired — reconnect your mailbox from the Code Inbox.");
+  try{ const r = await app.acquireTokenSilent({ scopes:["Mail.Read"], account: account }); return r.accessToken; }
+  catch(e){ const r = await app.acquireTokenPopup({ scopes:["Mail.Read"], account: account }); return r.accessToken; }
+}
+function graphApi(path, token){
+  return fetch("https://graph.microsoft.com/v1.0" + path, { headers:{ Authorization: "Bearer " + token } })
+    .then(r => { if(!r.ok) throw new Error("Microsoft Graph answered " + r.status + " — reconnect your mailbox if this persists."); return r.json(); });
+}
+async function connectMailbox(){
+  const mb = STORE.connections.mailbox;
+  if(!mb.provider) throw new Error("Choose your provider first.");
+  if(mb.provider === "Other") throw new Error("Automatic code fetching supports Gmail and Outlook. Other mailboxes keep the manual fallback in the Code Inbox.");
+  if(!mb.client_id) throw new Error("Paste your provider app's client ID first — it comes from the free one-time setup above.");
+  if(mb.provider === "Gmail") return connectGmail(mb.client_id);
+  if(mb.provider === "Outlook") return connectOutlook(mb.client_id);
+  throw new Error("Unknown provider: " + mb.provider);
+}
+/* --- code extraction + fetching --- */
+function extractCodeFromText(text){
+  const t = String(text || "");
+  const pats = [
+    /(?:verification|security|one[- ]?time|access|sign[- ]?in|login|confirmation|authentication)[^0-9a-z]{0,40}?(\d{4,8})\b/i,
+    /\bcode[^0-9a-z]{0,20}?(\d{4,8})\b/i,
+    /\b(\d{6})\b/
+  ];
+  for(const p of pats){ const m = t.match(p); if(m) return m[1]; }
+  return "";
+}
+function serviceName(from){
+  const s = String(from || "");
+  const named = s.match(/^"?([^"<@]+?)"?\s*</);
+  if(named && named[1].trim()) return named[1].trim();
+  const dom = s.match(/@([a-z0-9.-]+)/i);
+  return dom? dom[1].replace(/^www\./, "") : "Mailbox";
+}
+async function gmailFetchCodes(token){
+  const q = encodeURIComponent('newer_than:2d (verification OR code OR "one-time" OR passcode OR otp OR "sign-in" OR security)');
+  const list = await gmailApi("/messages?maxResults=12&q=" + q, token);
+  const out = [];
+  for(const m of (list.messages || [])){
+    const msg = await gmailApi("/messages/" + m.id + "?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date", token);
+    const headers = {};
+    (((msg.payload || {}).headers) || []).forEach(h => { headers[String(h.name).toLowerCase()] = h.value; });
+    const code = extractCodeFromText((headers.subject || "") + " " + (msg.snippet || ""));
+    if(!code) continue;
+    let when = nowISO();
+    if(headers.date){ const d = new Date(headers.date); if(!isNaN(d)) when = d.toISOString(); }
+    out.push({ service: serviceName(headers.from || ""), code: code, received_at: when });
+  }
+  return out;
+}
+async function graphFetchCodes(token){
+  const data = await graphApi("/me/messages?$top=15&$orderby=receivedDateTime%20desc&$select=subject,from,receivedDateTime,bodyPreview", token);
+  const out = [];
+  (data.value || []).forEach(msg => {
+    const hay = (msg.subject || "") + " " + (msg.bodyPreview || "");
+    if(!/code|verif|one-time|otp|passcode|sign-in|security/i.test(hay)) return;
+    const code = extractCodeFromText(hay);
+    if(!code) return;
+    const ea = (msg.from && msg.from.emailAddress) || {};
+    out.push({ service: serviceName(ea.name || ea.address || ""), code: code, received_at: msg.receivedDateTime || nowISO() });
+  });
+  return out;
+}
+async function fetchMailboxCodes(opts){
+  opts = opts || {};
+  const mb = STORE.connections.mailbox;
+  if(!mb || !mb.connected) return { added: 0, reason: "not-connected" };
+  let found = [];
+  if(mb.provider === "Gmail"){
+    let tok = mailTokenValid();
+    if(!tok || tok.provider !== "Gmail"){
+      try{ await reauthGmail(mb.client_id); tok = mailTokenValid(); }
+      catch(e){ return { added: 0, reason: "reauth" }; }
+    }
+    if(!tok) return { added: 0, reason: "reauth" };
+    found = await gmailFetchCodes(tok.access_token);
+  } else if(mb.provider === "Outlook"){
+    found = await graphFetchCodes(await outlookToken());
+  } else return { added: 0, reason: "unsupported" };
+  STORE.codes.codes = Array.isArray(STORE.codes.codes)? STORE.codes.codes : [];
+  let added = 0;
+  found.forEach(f => {
+    const dupe = STORE.codes.codes.some(c => c.code === f.code && (c.service || "") === f.service
+      && String(c.received_at || "").slice(0, 10) === String(f.received_at || "").slice(0, 10));
+    if(!dupe){ STORE.codes.codes.unshift({ id: uid("code"), service: f.service, code: f.code, received_at: f.received_at, note: "Fetched automatically from " + mb.provider }); added++; }
+  });
+  STORE.codes.codes.sort((a, b) => String(b.received_at || "").localeCompare(String(a.received_at || "")));
+  mb.last_checked_at = nowISO();
+  if(added){
+    await storeSave("codes", "Fetch mailbox codes");
+    await storeSave("connections", "Mailbox code check");
+    await logActivity("code", added + " new code" + (added === 1? "" : "s") + " fetched automatically from " + mb.provider + ".");
+  }
+  return { added: added };
+}
+
 /* ---------- code inbox ---------- */
 function renderCodes(){
   const box = $("#codesBox"); if(!box) return;
   const codes = STORE.codes.codes || [];
+  const mb = STORE.connections.mailbox || {};
+  const tok = mailTokenLoad();
+  const live = !!(mb.connected && tok && tok.provider === mb.provider && mailTokenValid());
+  const stateLine = live
+    ? "Connected to " + esc(mb.provider) + (mb.email? " as " + esc(mb.email) : "") + " — one-time sign-in codes and password-reset codes are fetched automatically." + (mb.last_checked_at? " Last checked " + esc(fmtDateTime(mb.last_checked_at)) + "." : "")
+    : mb.connected
+      ? "Your mailbox is set up, but its sign-in token is not live in this browser right now — reconnect to resume automatic fetching."
+      : "Connect your mailbox and one-time codes land here automatically — fetched by the system, never pasted by you.";
   box.innerHTML = `
   <div class="card" style="margin:0">
     <p class="label">Code inbox</p>
-    <p class="sub small">One-time sign-in codes and password-reset codes from your mailbox land here. Paste a code below and it is kept in codes.json.</p>
+    <p class="sub small">${stateLine}</p>
     ${codes.length? codes.map(c => '<div class="toggle"><div><b>'+esc(c.service||"Code")+'</b> <span class="mono">'+esc(c.code)+'</span><div class="sub small">'+esc(fmtDateTime(c.received_at))+(c.note? " · "+esc(c.note) : "")+'</div></div></div>').join("") : '<p class="sub">No codes yet.</p>'}
-    <div class="grid2 mt">
-      <div><label class="f">Service / site</label><input type="text" id="cdService" placeholder="e.g. a job board"></div>
-      <div><label class="f">Code or reset note</label><input type="text" id="cdCode" placeholder="Paste the code"></div>
+    <div class="mt">
+      ${live? '<button class="btn ghost small" id="btnCheckMail">Check mailbox now</button> ' : '<button class="btn ghost small" id="btnGoConnectMail">'+(mb.connected? "Reconnect mailbox" : "Connect mailbox")+'</button> '}
+      ${mb.connected? '<button class="btn ghost small" id="btnDiscMail">Disconnect mailbox</button>' : ""}
     </div>
-    <div class="mt"><button class="btn ghost small" id="btnAddCode">Add to inbox</button></div>
+    <details class="mt"><summary class="sub small" style="cursor:pointer">Got a code by text message instead? Add it manually</summary>
+      <div class="grid2 mt">
+        <div><label class="f">Service / site</label><input type="text" id="cdService" placeholder="e.g. a job board"></div>
+        <div><label class="f">Code</label><input type="text" id="cdCode" placeholder="The code from the text"></div>
+      </div>
+      <div class="mt"><button class="btn ghost small" id="btnAddCode">Add to inbox</button></div>
+    </details>
   </div>`;
-  $("#btnAddCode").addEventListener("click", async () => {
+  const chk = $("#btnCheckMail");
+  if(chk) chk.addEventListener("click", async ev => {
+    const btn = ev.currentTarget; setBusy(btn, true, "Checking…");
+    try{
+      const r = await fetchMailboxCodes({});
+      if(r && r.reason === "reauth"){ toast("Mailbox sign-in expired — use Reconnect mailbox."); renderCodes(); }
+      else { toast(r && r.added? r.added + " new code" + (r.added===1?"":"s") + " fetched." : "Mailbox checked — no new codes."); renderCodes(); }
+    }catch(e){ banner("Checking the mailbox failed: "+esc(e.message||String(e)), "err"); }
+    setBusy(btn, false);
+  });
+  const go = $("#btnGoConnectMail");
+  if(go) go.addEventListener("click", () => renderWizard(6));
+  const disc = $("#btnDiscMail");
+  if(disc) disc.addEventListener("click", async () => {
+    mailTokenClear();
+    STORE.connections.mailbox.connected = false;
+    try{ await storeSave("connections", "Disconnect mailbox"); }catch(e){}
+    toast("Mailbox disconnected in this browser. Codes already fetched stay in your inbox.");
+    renderCodes();
+  });
+  const addBtn = $("#btnAddCode");
+  if(addBtn) addBtn.addEventListener("click", async () => {
     const service = $("#cdService").value.trim(), code = $("#cdCode").value.trim();
-    if(!code){ toast("Paste a code first."); return; }
+    if(!code){ toast("Type the code from the text message first."); return; }
     STORE.codes.codes = Array.isArray(STORE.codes.codes)? STORE.codes.codes: [];
-    STORE.codes.codes.unshift({ id: uid("code"), service, code, received_at: nowISO(), note:"Added manually" });
-    try{ await storeSave("codes", "Add code to inbox"); await logActivity("code", "A code for "+(service||"an unnamed service")+" was added to the code inbox."); renderCodes(); }
+    STORE.codes.codes.unshift({ id: uid("code"), service, code, received_at: nowISO(), note:"Added manually (text message)" });
+    try{ await storeSave("codes", "Add code to inbox"); await logActivity("code", "A code for "+(service||"an unnamed service")+" was added to the code inbox manually."); renderCodes(); }
     catch(e){ banner("Saving the code failed: "+esc(e.message||String(e)), "err"); }
   });
 }
@@ -1439,22 +1734,38 @@ function renderActivity(){
 /* ---------- settings ---------- */
 function renderSettings(){
   const box = $("#settingsBox"); if(!box) return;
-  const fileRows = Object.keys(FILES).map(k => '<div class="toggle"><div><span class="mono">'+esc(FILES[k])+'</span></div><span class="pill green">in your repo</span></div>').join("");
+  const p = STORE.profile || {}, cn = STORE.connections || {}, cov = STORE.coverage || {};
+  const li = cn.linkedin || {}, mb = cn.mailbox || {};
+  const saved = cov.saved || { titles:[], lanes:[] };
+  const row = (label, value, pill, btn) => `
+    <div class="toggle"><div><b>${label}</b><div class="sub small">${value}</div></div>
+    <div>${pill || ""} ${btn || ""}</div></div>`;
   box.innerHTML = `
   <div class="card" id="settings">
-    <p class="label">Settings · Storage</p>
-    <p class="sub">Connected repo: <span class="mono">${esc(GH.owner)}/${esc(GH.repo)}</span> — all of this app's data lives in these files, and nowhere else:</p>
-    ${fileRows}
+    <p class="label">Settings</p>
+    ${row("Data repo", '<span class="mono">'+esc(GH.owner)+"/"+esc(GH.repo)+'</span> — private repo holding everything this app knows about you',
+      '<span class="pill green">connected</span>', "")}
+    ${row("Signed in as", esc(p.name || "—") + (p.email? " · " + esc(p.email) : ""), "", '<button class="btn ghost small" id="btnSetProfile">Edit</button>')}
+    ${row("LinkedIn", li.connected? "Connected" + (li.profile_url? " · " + esc(li.profile_url) : "") : "Not connected — applications work better with it",
+      '<span class="pill '+(li.connected? "green":"grey")+'">'+(li.connected? "connected":"not connected")+'</span>', '<button class="btn ghost small" id="btnSetLinkedIn">Manage</button>')}
+    ${row("Mailbox for codes", mb.connected? esc(mb.provider || "") + (mb.email? " · " + esc(mb.email) : "") + " — codes fetch automatically" : "Not connected — connect Gmail or Outlook and codes fetch themselves",
+      '<span class="pill '+(mb.connected? "green":"grey")+'">'+(mb.connected? "connected":"not connected")+'</span>', '<button class="btn ghost small" id="btnSetMailbox">Manage</button>')}
+    ${row("Saved coverage", (saved.titles||[]).length + " titles · " + (saved.lanes||[]).length + " lanes" + (cov.coverage_saved_at? " · saved " + esc(fmtDate(cov.coverage_saved_at)) : ""),
+      "", '<button class="btn ghost small" id="btnSetCoverage">Manage</button>')}
     <div class="mt">
       <button class="btn ghost small" id="btnReVerify">Re-verify my details</button>
       <button class="btn ghost small" id="btnRedoWizard">Back to setup wizard</button>
-      <button class="btn danger small" id="btnDisconnect">Disconnect (clears the token from this browser)</button>
+      <button class="btn danger small" id="btnDisconnect">Disconnect (clears the tokens from this browser)</button>
     </div>
-    <p class="sub small mt">Disconnecting removes the token from this browser only. Your repo and its data are untouched.</p>
+    <p class="sub small mt">Your data is stored as nine small files under <span class="mono">data/</span> in that repo (profile, coverage, rules, answers, connections, runs, filings, codes, activity) — and nowhere else. Sign-in tokens live only in this browser; disconnecting removes them and leaves your repo untouched.</p>
   </div>`;
   $("#btnDisconnect").addEventListener("click", disconnect);
   $("#btnReVerify").addEventListener("click", renderVerify);
   $("#btnRedoWizard").addEventListener("click", () => renderWizard(1));
+  const sp = $("#btnSetProfile"); if(sp) sp.addEventListener("click", () => renderWizard(1));
+  const sl = $("#btnSetLinkedIn"); if(sl) sl.addEventListener("click", () => renderWizard(5));
+  const sm = $("#btnSetMailbox"); if(sm) sm.addEventListener("click", () => renderWizard(6));
+  const sc = $("#btnSetCoverage"); if(sc) sc.addEventListener("click", () => renderWizard(4));
 }
 
 /* ---------- go ---------- */
