@@ -136,25 +136,45 @@ function titleTokens(title) {
 function significantTokens(title) {
   return titleTokens(title).filter((t) => !STOPWORDS.has(t));
 }
-/* A posting matches a saved title when they share ≥2 significant tokens,
-   or share the saved title's head/family word (its last significant token,
-   e.g. "analyst" in "Data Analyst" — "Business Analyst" qualifies). */
+/* Seniority / level markers — the only words allowed to differ between a
+   posting title and a saved title. */
+const LEVEL_WORDS = new Set(["senior", "sr", "lead", "principal", "staff",
+  "associate", "executive", "junior", "jr", "chief", "head", "vp", "vice", "president"]);
+/* Canonical core of a title: its significant words minus level markers,
+   sorted — so "Director of Healthcare Operations", "Healthcare Operations
+   Director" and "Senior Healthcare Operations Director" share one core,
+   while "IT Director", "Director of Analytics" and "Payment Operations
+   Specialist" share none with it. A posting matches a saved title ONLY
+   when their cores are identical. The previous rule (any 2 shared words,
+   or sharing the saved title's last word) parked anything containing
+   "operations" or "director" — it has been removed, not relaxed. */
+function titleCore(title) {
+  return significantTokens(title).filter((t) => !LEVEL_WORDS.has(t)).sort().join(" ");
+}
 function titleMatches(postingTitle, savedTitles) {
-  const pToks = significantTokens(postingTitle);
-  const pSet = new Set(pToks);
+  const core = titleCore(postingTitle);
+  if (!core) return null;
   for (const saved of savedTitles || []) {
-    const sToks = significantTokens(saved);
-    if (!sToks.length) continue;
-    const shared = sToks.filter((t) => pSet.has(t)).length;
-    if (shared >= 2) return saved;
-    const family = sToks[sToks.length - 1];
-    if (family.length >= 4 && pSet.has(family)) return saved;
+    if (titleCore(saved) === core) return saved;
   }
   return null;
 }
 function hasRemoteSignal(location, text) {
   return /\b(remote|work from home|work-from-home|wfh|distributed|telecommut|work from anywhere|anywhere)\b/i
     .test(String(location || "") + " " + String(text || ""));
+}
+/* Places that pin a posting to a non-US labor market. A posting whose
+   stated location is one of these — with no US / worldwide signal — is
+   not remote work for this user, however the board labels it (the feeds
+   in particular mark EU-restricted roles "remote"). */
+const NON_US_PLACES = ["germany", "berlin", "munich", "münchen", "hamburg", "frankfurt", "cologne", "köln", "stuttgart", "düsseldorf", "leipzig", "dresden", "hannover", "nuremberg", "nürnberg", "austria", "vienna", "wien", "switzerland", "zurich", "zürich", "geneva", "bern", "netherlands", "amsterdam", "rotterdam", "utrecht", "eindhoven", "belgium", "brussels", "france", "paris", "lyon", "spain", "madrid", "barcelona", "valencia", "portugal", "lisbon", "porto", "italy", "milan", "rome", "poland", "warsaw", "kraków", "wroclaw", "gdansk", "czech", "prague", "praha", "slovakia", "bratislava", "hungary", "budapest", "romania", "bucharest", "cluj", "bulgaria", "sofia", "croatia", "zagreb", "serbia", "belgrade", "greece", "athens", "ireland", "dublin", "united kingdom", "uk", "london", "manchester", "edinburgh", "england", "scotland", "wales", "sweden", "stockholm", "gothenburg", "malmö", "norway", "oslo", "denmark", "copenhagen", "finland", "helsinki", "estonia", "tallinn", "latvia", "riga", "lithuania", "vilnius", "iceland", "reykjavik", "europe", "eu only", "emea", "india", "bangalore", "bengaluru", "hyderabad", "pune", "mumbai", "delhi", "chennai", "pakistan", "lahore", "karachi", "bangladesh", "dhaka", "philippines", "manila", "vietnam", "hanoi", "ho chi minh", "thailand", "bangkok", "indonesia", "jakarta", "singapore", "malaysia", "kuala lumpur", "china", "beijing", "shanghai", "shenzhen", "japan", "tokyo", "osaka", "korea", "seoul", "australia", "sydney", "melbourne", "brisbane", "perth", "new zealand", "auckland", "wellington", "canada", "toronto", "vancouver", "montreal", "calgary", "ottawa", "mexico", "mexico city", "guadalajara", "brazil", "são paulo", "sao paulo", "rio de janeiro", "argentina", "buenos aires", "chile", "santiago", "colombia", "bogotá", "peru", "lima", "south africa", "cape town", "johannesburg", "nigeria", "lagos", "kenya", "nairobi", "egypt", "cairo", "israel", "tel aviv", "united arab emirates", "dubai", "abu dhabi", "saudi arabia", "riyadh", "qatar", "doha", "turkey", "istanbul", "ankara", "ukraine", "kyiv", "russia", "moscow"];
+const US_SIGNALS = /\b(usa|u\.s\.a\.|united states|us only|u\.s\. only|worldwide|world wide|anywhere|global|americas|north america)\b/i;
+function locationBlocksUS(location) {
+  const loc = String(location || "").toLowerCase();
+  if (!loc.trim()) return false;
+  if (US_SIGNALS.test(loc)) return false;
+  const words = new Set(loc.split(/[^a-zà-ÿ]+/).filter(Boolean));
+  return NON_US_PLACES.some((p) => (p.includes(" ") ? loc.includes(p) : words.has(p)));
 }
 /* Parse a pay figure to an annual USD number. Returns null when unparseable. */
 function amountToAnnual(rawValue, isK, isHourly) {
@@ -447,18 +467,22 @@ async function evaluatePosting(posting, source, ctx) {
       reason: "Matches your always-reject list: " + rejectKw,
       check: { verdict: "rejected", rules: [
         { rule: "Always-reject list", status: "fail", evidence: "Title contains “" + rejectKw + "”" },
-        { rule: "Title matches your saved titles", status: "pass", evidence: posting.title } ] } });
+        { rule: "Title matches your saved titles", status: "pass", evidence: "Matches your saved title “" + matchedTitle + "”" } ] } });
     return;
   }
 
   await ensureDescription(posting, ctx);
-  const remote = posting.remoteFlag === true || hasRemoteSignal(posting.location, posting.description);
+  const blockedByLocation = locationBlocksUS(posting.location);
+  const remote = !blockedByLocation &&
+    (posting.remoteFlag === true || hasRemoteSignal(posting.location, posting.description));
 
   if (rules.remote_only && !remote) {
-    addFiling({ ...base, status: "rejected", reason: "Not remote",
+    addFiling({ ...base, status: "rejected", reason: blockedByLocation ? "Restricted to a non-US location" : "Not remote",
       check: { verdict: "rejected", rules: [
-        { rule: "Remote-only", status: "fail", evidence: "Location: " + (posting.location || "not stated") + " — no remote signal in the posting" },
-        { rule: "Title matches your saved titles", status: "pass", evidence: posting.title } ] } });
+        { rule: "Remote-only", status: "fail", evidence: blockedByLocation
+            ? "Location: " + posting.location + " — restricted to a non-US location"
+            : "Location: " + (posting.location || "not stated") + " — no remote signal in the posting" },
+        { rule: "Title matches your saved titles", status: "pass", evidence: "Matches your saved title “" + matchedTitle + "”" } ] } });
     return;
   }
 
@@ -468,14 +492,14 @@ async function evaluatePosting(posting, source, ctx) {
     addFiling({ ...base, status: "rejected", reason: "Pay below your minimum",
       check: { verdict: "rejected", rules: [
         { rule: "Minimum pay", status: "fail", evidence: "Posting tops out at " + money(maxPay) + "/yr; your minimum is " + money(minAnnual) + "/yr" },
-        { rule: "Title matches your saved titles", status: "pass", evidence: posting.title } ] } });
+        { rule: "Title matches your saved titles", status: "pass", evidence: "Matches your saved title “" + matchedTitle + "”" } ] } });
     return;
   }
 
   addFiling({ ...base, status: "parked",
     reason: "Ready to apply — found by the hunt engine on " + source + ". Open the posting, apply, then record it as filed.",
     check: { verdict: "ready", rules: [
-      { rule: "Title matches your saved titles", status: "pass", evidence: posting.title },
+      { rule: "Title matches your saved titles", status: "pass", evidence: "Matches your saved title “" + matchedTitle + "”" },
       { rule: "Remote-only", status: remote ? "pass" : "grey",
         evidence: remote ? ("Remote — " + (posting.location || "posting states remote work"))
                          : (rules.remote_only ? "Remote confirmed" : "Remote-only rule is off; location: " + (posting.location || "not stated")) },
@@ -485,11 +509,31 @@ async function evaluatePosting(posting, source, ctx) {
           : (minAnnual == null ? "No minimum pay set" : "No pay stated in the posting") } ] } });
 }
 
+/* Parks left behind by looser matching that no longer match the saved
+   titles under the current matcher are not leads — remove them, so a
+   fixed matcher also cleans the dashboard it already polluted. Only
+   parked rows are touched; filed rows are history and never move. */
+function pruneStaleParks() {
+  const savedTitles = (engine.coverage.saved && engine.coverage.saved.titles) || [];
+  if (!savedTitles.length || !engine.filings || !Array.isArray(engine.filings.filings)) return 0;
+  const before = engine.filings.filings.length;
+  engine.filings.filings = engine.filings.filings.filter((f) =>
+    !f || f.status !== "parked" || titleMatches(f.role, savedTitles) != null);
+  const removed = before - engine.filings.filings.length;
+  if (removed > 0) {
+    engine.dedupe = new Set(engine.filings.filings.map((f) => filingKey(f.company, f.role, f.url)));
+    logActivityEntry("run", "Removed " + removed + " previously parked lead(s) that do not match your saved titles under the current title matcher.");
+    log("Pruned " + removed + " stale parked lead(s).");
+  }
+  return removed;
+}
+
 /* ---------------- main ---------------- */
 async function main() {
   if (!fs.existsSync(DATA_DIR)) { log("No data/ directory in this repo — nothing to do."); return; }
   ensureGitIdentity();
   loadAll();
+  pruneStaleParks();
 
   /* 1 — pick up or create the run */
   let cur = engine.runs.current_run;
