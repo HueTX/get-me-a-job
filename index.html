@@ -388,7 +388,10 @@ const SKILL_WORDS = [
   /* marketing & growth */
   "HubSpot","Google Ads","LinkedIn Ads","SEO","SEM","Content Strategy","Content Marketing","Digital Marketing",
   "Marketing Automation","Email Marketing","Social Media Marketing","WordPress","Campaign Management",
-  "Demand Generation","Lead Generation","Google Optimize","Copywriting","Brand Management","Market Research","Product Marketing"
+  "Demand Generation","Lead Generation","Google Optimize","Copywriting","Brand Management","Market Research","Product Marketing",
+  /* program & project delivery */
+  "Program Management","Stakeholder Management","Process Improvement","Risk Management","Change Management",
+  "Vendor Management","Budgeting","Resource Planning","Requirements Gathering","Business Process"
 ];
 /* everyday words that also name skills — only trusted inside the resume's own Skills section,
    so prose like "supply chain teams" or an employer's name never becomes a detected skill */
@@ -539,6 +542,7 @@ const ROLE_FAMILIES = [
   { keys:["engineer"], family:["Engineer","Mechanical Engineer","Design Engineer","Manufacturing Engineer","Project Engineer","Systems Engineer","Cloud Engineer","Infrastructure Engineer","Platform Engineer","Support Engineer","DevOps Engineer"] },
   { keys:["designer"], family:["Designer","Product Designer","UX Designer","UI Designer","Interaction Designer","Visual Designer"] },
   { keys:["manager"], family:["Manager","Program Manager","Project Manager","Product Manager","Operations Manager","Delivery Manager"] },
+  { keys:["director"], family:["Director","Project Director","Program Director","Operations Director","Managing Director","Director of Operations","Associate Director","Executive Director","Senior Director"] },
   { keys:["developer"], family:["Developer","Software Developer","Application Developer","Full Stack Developer","Web Developer"] },
   { keys:["consultant"], family:["Consultant","Solutions Consultant","Technical Consultant","Implementation Consultant","Advisory Consultant"] },
   { keys:["administrator"], family:["Administrator","Systems Administrator","Cloud Administrator","Network Administrator","Database Administrator"] },
@@ -551,11 +555,21 @@ const ROLE_FAMILIES = [
 function familyForTitle(title){
   const low = String(title||"").toLowerCase();
   for(const rf of ROLE_FAMILIES){ if(rf.keys.some(k => low.includes(k))) return rf.family; }
-  /* fall back: a family whose forms end in the title's own head word (e.g. "Underwriter" -> no match, "Care Coordinator" -> coordinator) */
-  const words = low.split(/[^a-z]+/).filter(Boolean);
-  const head = words[words.length-1];
-  if(head){ for(const rf of ROLE_FAMILIES){ if(rf.family.some(f => f.toLowerCase().split(" ").pop() === head)) return rf.family; } }
   return null;
+}
+/* career-field words: when the title itself names a field ("Healthcare Project Director",
+   "Data Analyst"), the generated set carries field-flavored variants of the family forms,
+   so the titles match the user's actual field instead of generic roles */
+const FIELD_WORDS = ["healthcare","clinical","medical","data","cloud","digital","marketing","product",
+  "software","security","cyber","financial","finance","operations","business","technical","information",
+  "mechanical","electrical","civil","industrial","quality","customer","sales","energy","retail","legal",
+  "content","brand","growth","platform","infrastructure","network","systems","enterprise","solutions",
+  "application","research","human"];
+function titleFieldWord(title){
+  const words = String(title||"").toLowerCase().split(/[^a-z]+/).filter(Boolean)
+    .filter(w => !["senior","lead","principal","staff","junior","sr","jr"].includes(w));
+  if(words.length && FIELD_WORDS.includes(words[0])) return words[0][0].toUpperCase() + words[0].slice(1);
+  return "";
 }
 function generateTitles(specifiedTitle, detection){
   const title = String(specifiedTitle||"").trim();
@@ -563,6 +577,13 @@ function generateTitles(specifiedTitle, detection){
   const headWord = title.toLowerCase().split(/[^a-z]+/).filter(Boolean).pop() || "";
   let out = [];
   if(title) out.push(title);
+  const fieldWord = titleFieldWord(title);
+  if(family && fieldWord){
+    /* field-flavored variants first, so they survive the cap: "Healthcare Program Director", "Data Systems Analyst" */
+    family.forEach(f => {
+      if(!f.toLowerCase().includes(fieldWord.toLowerCase())) out.push(fieldWord + " " + f);
+    });
+  }
   if(family){
     family.forEach(f => {
       /* a bare head noun ("Analyst") IS the specified title once its domain word is on it —
@@ -602,7 +623,7 @@ const BOARD_LANES = [
   { name:"Google Jobs", sites:["Google Jobs (google.com/search jobs)"] },
   { name:"Company Career Sites", sites:["Employer career pages (from your target employer list)"] }
 ];
-function generateLanes(detection, targetEmployers){
+function generateLanes(detection, targetEmployers, titleField){
   const lanes = [];
   /* sector lanes from detected industries */
   (detection.industries||[]).forEach(ind => {
@@ -612,6 +633,12 @@ function generateLanes(detection, targetEmployers){
     lanes.push({ id: uid("lane"), name: ind + " employers", kind:"sector",
       sites: pool.length? pool : ["Employers in the " + ind + " sector (add target employers in the wizard)"] });
   });
+  /* no industry detected: fall back to the career field named in the title itself */
+  if(!lanes.length && titleField){
+    const pool = uniq([].concat(targetEmployers||[], (detection.employers||[]).slice(0,8)));
+    lanes.push({ id: uid("lane"), name: titleField + " employers", kind:"sector",
+      sites: pool.length? pool : ["Employers in the " + titleField + " field (add target employers in the wizard)"] });
+  }
   /* one lane for the target employer list itself when no sector matched */
   if(!lanes.length && (targetEmployers||[]).length){
     lanes.push({ id: uid("lane"), name:"Target employers", kind:"sector", sites: uniq(targetEmployers) });
@@ -622,7 +649,7 @@ function generateLanes(detection, targetEmployers){
 async function generateCoverage(specifiedTitle){
   const det = STORE.profile.detection || {};
   let titles = generateTitles(specifiedTitle, det);
-  let lanes = generateLanes(det, STORE.profile.employers.target || []);
+  let lanes = generateLanes(det, STORE.profile.employers.target || [], titleFieldWord(specifiedTitle));
   let widened = false;
   if(titles.length < 20 || lanes.length < 9){
     /* automatic widening pass: generate from every title the resume actually held —
@@ -924,19 +951,21 @@ function draftHTML(d){
     '<div class="mt"><button class="btn" type="button" id="btnSaveCoverage">Save coverage</button> <span class="sub small">Writes to coverage.json in your repo and reads it back to verify.</span></div>';
 }
 function bindDraft(){
+  /* the draft editor lives in the wizard (#draftBox) or on the dashboard (#dashDraftBox) */
+  const dbox = () => $("#draftBox") || $("#dashDraftBox");
   $$("[data-rm-title]").forEach(b => b.addEventListener("click", () => {
     STORE.coverage.draft.titles.splice(parseInt(b.getAttribute("data-rm-title"),10), 1);
-    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+    dbox().innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
   }));
   $$("[data-rm-lane]").forEach(b => b.addEventListener("click", () => {
     STORE.coverage.draft.lanes.splice(parseInt(b.getAttribute("data-rm-lane"),10), 1);
-    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+    dbox().innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
   }));
   const add = $("#btnAddTitle");
   if(add) add.addEventListener("click", () => {
     const v = $("#wAddTitle").value.trim(); if(!v) return;
     STORE.coverage.draft.titles = uniq(STORE.coverage.draft.titles.concat([v]));
-    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+    dbox().innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
   });
   const save = $("#btnSaveCoverage");
   if(save) save.addEventListener("click", async ev => {
@@ -947,7 +976,7 @@ function bindDraft(){
       await storeSave("coverage", "Save coverage");
       await logActivity("save", "Coverage saved: "+STORE.coverage.saved.titles.length+" titles and "+STORE.coverage.saved.lanes.length+" lanes are now the active set (saved "+STORE.coverage.saved.saved_at+").");
       banner("Coverage saved to your repo and verified by read-back. It is now the set your dashboard and runs use.", "ok");
-      renderWizard(4);
+      if($("#dashDraftBox")) renderDashboard(); else renderWizard(4);
     }catch(e){ banner("Save failed: "+esc(e.message||String(e)), "err"); }
     setBusy(btn, false);
   });
@@ -1162,13 +1191,15 @@ function renderDashboard(){
     <div class="card" style="margin:0">
       <p class="label">Titles searched (${saved.titles.length})</p>
       <div>${saved.titles.map(t=>'<span class="chip">'+esc(t)+'</span>').join("") || '<span class="sub">None saved yet.</span>'}</div>
-      <div class="mt"><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button></div>
+      <div class="mt"><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button> <button class="btn ghost small" id="btnRegenCoverage">Regenerate titles &amp; lanes</button></div>
+      <p class="sub small" style="margin-top:6px">Regenerate builds a fresh draft from your title and the career field detected in your resume. Nothing changes until you save the draft.</p>
     </div>
     <div class="card" style="margin:0">
       <p class="label">Your rules</p>
       <div id="rulesBox">${rulesHTML()}</div>
     </div>
   </div>
+  <div id="dashDraftBox" class="mt"></div>
   <div id="filingsBox" class="mt"></div>
   <div class="grid2 mt">
     <div id="codesBox"></div>
@@ -1179,6 +1210,17 @@ function renderDashboard(){
   const fin = $("#lnkFinishProfile"); if(fin) fin.addEventListener("click", e => { e.preventDefault(); renderVerify(); });
   const mk = $("#lnkMakeCoverage"); if(mk) mk.addEventListener("click", e => { e.preventDefault(); renderWizard(4); });
   const ec = $("#btnEditCoverage"); if(ec) ec.addEventListener("click", () => renderWizard(4));
+  const rg = $("#btnRegenCoverage"); if(rg) rg.addEventListener("click", async ev => {
+    const t = STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "";
+    if(!t){ toast("Set your title first — opening the coverage step."); renderWizard(4); return; }
+    const btn = ev.currentTarget; setBusy(btn, true, "Generating…");
+    try{
+      const d = await generateCoverage(t);
+      $("#dashDraftBox").innerHTML = draftHTML(d); bindDraft();
+      toast("Fresh draft generated from your title and detected career field — review it, then save.");
+    }catch(e){ banner("Regeneration hit a problem: "+esc(e.message||String(e)), "err"); }
+    setBusy(btn, false);
+  });
   const start = $("#btnStartRun"); if(start) start.addEventListener("click", startRun);
   const stop = $("#btnStopRun"); if(stop) stop.addEventListener("click", stopRun);
   $$("#laneGrid .lane-card").forEach(card => card.addEventListener("click", () => openLanePanel(parseInt(card.getAttribute("data-lane"),10))));
