@@ -944,7 +944,7 @@ async function extractFileText(file){
 }
 
 /* ---------- coverage generation: title families ----------
-   How titles are built (Hubert's spec, 2026-10-15): start from the
+   How titles are built (product spec, 2026-10-15): start from the
    title the user typed in and from every title on their résumé, work
    out the role FAMILY each one belongs to, and generate that family's
    real titles — the ones people in those positions actually hold and
@@ -1619,12 +1619,13 @@ function wizStep4(){
   const draft = c.draft || { titles:[], lanes:[] };
   const saved = c.saved || { titles:[], lanes:[] };
   wizShell(4, `
-    <p class="sub" style="line-height:1.55">Tell the app the title you are aiming at. It generates a draft from
-    <b>your title and the titles your resume actually held</b> — seniority levels and word order only
-    ("Healthcare Project Director" → "Senior Healthcare Project Director", "Director of Healthcare Project").
-    It never invents roles, swaps in adjacent ones, or drops your field word, plus sector lanes from your
-    background and the big job boards. The draft changes nothing until you <b>save</b> it; the saved set is
-    what your dashboard and runs use.</p>
+    <p class="sub" style="line-height:1.55">Tell the app the title you are aiming at. It builds a draft of
+    <b>at least 50 real titles</b> from your title's role family — the titles people in that role actually
+    hold and search for on job boards — plus <b>every title your resume held</b>, each expanded across its
+    own family the same way. Field words come only from your own titles and background; it never crosses
+    into a different line of work or makes titles up. It also drafts sector lanes from your background and
+    the big job boards. The draft changes nothing until you <b>save</b> it; the saved set is what your
+    dashboard and runs use.</p>
     <label class="f">Your title</label>
     <div class="row" style="align-items:flex-end">
       <div style="flex:3"><input type="text" id="wTitle" value="${esc(prefill)}" placeholder="e.g. Data Analyst"></div>
