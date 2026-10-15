@@ -149,6 +149,200 @@
 .srccount{text-align:right;color:#8a8378;font-size:13px}
 details.fold summary{cursor:pointer;color:#6c4bd8;font-weight:600;margin:10px 0 4px}
 .dashh{margin:0;font-size:26px}
+
+/* ===== Sweep Tracker port — tokens + components replicated from the tracker ===== */
+:root{
+  --bg:#f6f2e7; --surface:#fff; --frost:#ffffffc7; --text:#2e2a22; --ink-2:#655e50; --dim:#a79b83;
+  --border:#eae1cc; --accent:#5a5ce6; --accent-2:#8a7cf5; --accent-soft:#eceaff; --accent-ink:#4c46c8;
+  --blue-soft:#e6edff; --blue-ink:#3355c9; --peri-soft:#e2e6ff; --peri-ink:#4453b8;
+  --green-soft:#e5f6ec; --green-ink:#1d7a4c; --green:#2fbf71; --amber:#e8a33d; --amber-soft:#fdf2dc; --amber-ink:#96650a;
+  --wash:#967a4212; --bar-track:#eae1cb; --red:#d64545; --red-soft:#fdecec; --red-ink:#a63a3a;
+  --frost-green:#d5f3e1cc; --frost-red:#fde2e2d1; --frost-amber:#fdf2dcdb; --pill-bg:#ffffffb8;
+  --radius:20px;
+  --shadow:0 12px 32px #58462217,0 2px 6px #5846220d;
+  --shadow-sm:0 6px 18px #58462214,0 1px 3px #5846220d;
+  --shadow-float:0 26px 48px -14px #58462233,0 12px 22px -8px #5846221f,0 2px 5px #5846220f,inset 0 1px 0 #ffffffb3;
+}
+[data-theme="dark"]{
+  --bg:#101218; --surface:#1a1d26; --frost:#1c1f2ac7; --text:#eef0f6; --ink-2:#aab0c0; --dim:#7c8496;
+  --border:#262a38; --accent:#8b8ef7; --accent-2:#a894fa; --accent-soft:#262a4d; --accent-ink:#b9bcff;
+  --blue-soft:#232c4d; --blue-ink:#a9b8ff; --peri-soft:#262b4d; --peri-ink:#b3bcff;
+  --green-soft:#16301f; --green-ink:#7fd6a4; --green:#3ecf7f; --amber:#e8a33d; --amber-soft:#33270f; --amber-ink:#f0bb63;
+  --wash:#8b8ef71a; --bar-track:#262a36; --red:#ff7a72; --red-soft:#3a1f22; --red-ink:#ffaaa3;
+  --frost-green:#16301fd1; --frost-red:#3a1a1ad1; --frost-amber:#382a10db; --pill-bg:#06080e6b;
+  --shadow:0 12px 32px #00000059,0 2px 6px #00000040;
+  --shadow-sm:0 6px 18px #0000004d,0 1px 3px #0003;
+  --shadow-float:0 26px 48px -14px #0009,0 12px 22px -8px #00000073,0 2px 5px #00000059,inset 0 1px 0 #ffffff24,0 0 10px #ffffff12,0 0 22px #ffffff0a;
+}
+.tk-frosted{background:var(--frost);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.tk-frosted-green{background:var(--frost-green);-webkit-backdrop-filter:blur(14px) saturate(1.45);backdrop-filter:blur(14px) saturate(1.45)}
+.tk-frosted-red{background:var(--frost-red);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.tk-frosted-amber{background:var(--frost-amber);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4)}
+.tk-float{box-shadow:var(--shadow-float)}
+@keyframes tkBlinkSoft{0%,to{opacity:1}50%{opacity:.35}}
+@keyframes tkPulseDot{0%,to{box-shadow:0 0 #5a5ce659}50%{box-shadow:0 0 0 6px #5a5ce600}}
+@keyframes tkBarSlide{0%{transform:translate(-110%)}to{transform:translate(280%)}}
+@keyframes tkBarShimmer{0%{background-position:200% 0}to{background-position:-200% 0}}
+@keyframes tkFunnelDrop{0%{transform:translateY(-10px) scale(1);opacity:0}16%{opacity:1}72%{opacity:1}to{transform:translate(var(--funnel-x,0px),44px) scale(.42);opacity:0}}
+@keyframes tkFunnelGlow{0%,to{opacity:.55}50%{opacity:1}}
+@keyframes tkTitleSwitch{0%{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+@keyframes tkSpin{to{transform:rotate(360deg)}}
+.tk-livedot{animation:1.6s ease-in-out infinite tkBlinkSoft}
+.tk-nowdot{animation:2s ease-in-out infinite tkPulseDot}
+.tk-barlive{animation:1.4s linear infinite tkBarShimmer;background-image:linear-gradient(100deg,#0000 30%,#ffffff80 50%,#0000 70%);background-size:200% 100%}
+.tk-browserbar{animation:1.6s ease-in-out infinite tkBarSlide}
+.tk-funnelapp{animation:2.3s ease-in infinite tkFunnelDrop;will-change:transform,opacity}
+.tk-funnelglow{animation:2.3s ease-in-out infinite tkFunnelGlow}
+.tk-incoming{animation:.45s ease-out tkTitleSwitch}
+.tk-spin{animation:1s linear infinite tkSpin}
+@media (prefers-reduced-motion:reduce){.tk-livedot,.tk-nowdot,.tk-barlive,.tk-browserbar,.tk-funnelapp,.tk-funnelglow,.tk-incoming{animation:none!important}.tk-funnelapp{opacity:.85}}
+
+.tk-wrap{max-width:880px;margin:0 auto;padding:44px 24px 64px;font-size:17px;color:var(--text)}
+@media (max-width:640px){.tk-wrap{padding:32px 18px 64px}}
+.tk-h2{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--dim);margin:0 0 16px}
+.tk-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow)}
+.tk-section{margin-top:48px}
+.tk-sub{font-size:14.5px;line-height:1.55;color:var(--dim)}
+.tk-h1{font-size:clamp(34px,6vw,48px);font-weight:300;line-height:1.12;letter-spacing:-.02em;margin:0}
+.tk-bigbtn{display:inline-block;cursor:pointer;border-radius:999px;border:0;padding:14px 28px;font-size:17px;font-weight:700;box-shadow:var(--shadow);font-family:inherit}
+.tk-bigbtn:disabled{cursor:default;opacity:.6}
+.tk-bigbtn.green{background:var(--green);color:#fff}
+.tk-bigbtn.red{background:var(--red);color:#fff}
+.tk-bigbtn.outline-green{background:var(--green-soft);color:var(--green-ink);border:2px solid var(--green);cursor:default}
+.tk-bigbtn.outline-red{background:var(--surface);color:var(--red);border:2px solid var(--red);cursor:default}
+.tk-caption{font-size:14px;color:var(--dim);margin:0}
+.tk-statusline{font-size:14px;color:var(--dim);margin:0}
+.tk-statusline.err{color:var(--red)}
+.tk-table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:15.5px}
+.tk-table th{border-bottom:1px solid var(--border);padding:10px 12px 8px 0;text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)}
+.tk-table th:last-child{padding-right:0}
+.tk-table th.r,.tk-table td.r{text-align:right}
+.tk-table td{border-bottom:1px solid var(--border);padding:11px 12px 11px 0;vertical-align:top;word-break:break-word}
+.tk-table td:last-child{padding-right:0}
+.tk-table td.co{font-weight:700}
+.tk-table td.dim2{color:var(--ink-2)}
+.tk-table td.time{white-space:nowrap;text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.tk-where{display:inline-block;max-width:100%;white-space:normal;word-break:break-word;border-radius:999px;padding:2px 10px;font-size:13.5px;font-weight:600}
+.tk-where.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-where.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-where.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-where.grey{background:var(--wash);color:var(--ink-2)}
+.tk-rowbtn{cursor:pointer;border:0;border-radius:999px;padding:6px 16px;font-size:13.5px;font-weight:700;font-family:inherit;white-space:nowrap}
+.tk-rowbtn:disabled{cursor:default;opacity:.6}
+.tk-rowbtn.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-rowbtn.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-rowbtn.accent{background:var(--accent);color:#fff;box-shadow:var(--shadow-sm)}
+.tk-rowbtn.accentsoft{background:var(--accent-soft);color:var(--accent-ink)}
+.tk-rowbtn.track{background:var(--bar-track);color:var(--ink-2)}
+.tk-countpill{display:inline-block;border-radius:999px;padding:3px 12px;font-size:13.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.tk-countpill.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-countpill.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-countpill.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-countpill.accent{background:var(--accent-soft);color:var(--accent-ink)}
+.tk-countpill.track{background:var(--bar-track);color:var(--ink-2)}
+.tk-panelhead{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:6px}
+.tk-panelhead h3{font-size:18.5px;font-weight:700;margin:0}
+.tk-closebtn{margin-left:auto;cursor:pointer;border:0;border-radius:999px;background:var(--bar-track);padding:6px 16px;font-size:13.5px;font-weight:700;color:var(--ink-2);font-family:inherit}
+.tk-grouplabel{display:inline-block;border-radius:999px;background:var(--green-soft);padding:2px 10px;font-size:13px;font-weight:700;color:var(--green-ink)}
+.tk-checkbtn{display:inline-flex;max-width:100%;cursor:pointer;align-items:center;gap:6px;white-space:normal;border-radius:999px;text-align:left;border:0;padding:4px 12px;font-size:13px;font-weight:700;font-family:inherit}
+.tk-checkbtn.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-checkbtn.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-checkbtn.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-rulepill{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.tk-rulepill.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-rulepill.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-rulepill.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-rulepill.grey{background:var(--bar-track);color:var(--ink-2)}
+.tk-todaygrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:640px){.tk-todaygrid{grid-template-columns:repeat(2,1fr)}}
+.tk-todaycard{display:flex;width:100%;flex-direction:column;border:0;border-radius:var(--radius);padding:22px 20px 20px;text-align:center;font-family:inherit}
+button.tk-todaycard{cursor:pointer}
+.tk-todaycard .tk-tlabel{margin-top:10px;display:block;font-size:15.5px;font-weight:600}
+.tk-todaycard .tk-tap{margin-top:4px;display:block;font-size:13px;font-weight:600}
+.tk-cardpills{margin-top:14px;display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.tk-cardpills.left{justify-content:flex-start}
+.tk-srcpill{white-space:nowrap;border-radius:999px;background:var(--pill-bg);padding:3px 11px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
+.tk-gauge{position:relative;margin:0 auto;display:block;height:104px;width:104px;flex-shrink:0}
+.tk-gauge .tk-gaugenum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:300;line-height:1;font-variant-numeric:tabular-nums;color:var(--text)}
+.tk-donut{position:relative;display:block;height:104px;width:104px}
+.tk-donut .tk-donutnum{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;font-weight:300;line-height:1;font-variant-numeric:tabular-nums;color:var(--text)}
+.tk-funnelbox{position:relative;margin:4px auto 0;height:96px;width:124px}
+.tk-funnelchip{position:absolute;top:0;display:block;height:13px;width:19px;border-radius:4px;box-shadow:var(--shadow-sm)}
+.tk-incomingpill{margin:10px auto 0;display:flex;height:44px;width:100%;max-width:220px;align-items:center;justify-content:center;overflow:hidden;border-radius:999px;background:var(--accent-soft);padding:0 12px}
+.tk-incomingpill span{text-align:center;font-size:12.5px;font-weight:700;line-height:1.3;color:var(--accent-ink);word-break:break-word}
+.tk-incomingpill span.dim{font-weight:600;color:var(--dim)}
+.tk-tilegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:16px;grid-auto-rows:1fr;list-style:none;margin:0;padding:0}
+@media (max-width:520px){.tk-tilegrid{grid-template-columns:1fr}}
+.tk-tile{position:relative;display:flex;height:100%;width:100%;cursor:pointer;flex-direction:column;align-items:center;border:0;border-radius:28px;padding:20px;text-align:center;font-family:inherit;color:var(--text)}
+.tk-tile.track{background:var(--bar-track)}
+.tk-tile.selected{outline:2px solid var(--accent);outline-offset:2px;box-shadow:var(--shadow-sm)}
+.tk-tile .tk-tilename{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;font-size:18px;font-weight:700;line-height:1.3}
+.tk-prioritytag{border-radius:999px;background:var(--accent);padding:2px 8px;font-size:10.5px;font-weight:800;line-height:1.4;letter-spacing:.09em;color:#fff}
+.tk-selectedtag{border-radius:999px;background:var(--green);padding:2px 8px;font-size:10.5px;font-weight:800;line-height:1.4;letter-spacing:.09em;color:#fff}
+.tk-checkbadge{position:absolute;right:12px;top:12px;display:flex;height:24px;width:24px;align-items:center;justify-content:center;border-radius:999px;border:2px solid var(--dim);background:var(--surface);color:transparent}
+.tk-checkbadge.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.tk-tilestatus{margin-top:12px;display:flex;align-items:center;gap:6px;font-size:15px}
+.tk-dot8{display:inline-block;height:8px;width:8px;flex-shrink:0;border-radius:999px}
+.tk-spinner{display:inline-block;height:12px;width:12px;flex-shrink:0;border-radius:999px;border:2px solid var(--amber-ink);border-top-color:transparent}
+.tk-bar{margin-top:auto;display:block;width:100%;padding-top:16px}
+.tk-bar .tk-bartrack{display:block;height:10px;overflow:hidden;border-radius:999px;background:var(--pill-bg)}
+.tk-bar .tk-barfill{display:block;height:100%;border-radius:999px;transition:width 1s ease-out}
+.tk-sitesline{margin-top:10px;display:block;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--dim)}
+.tk-chip{display:inline-flex;align-items:center;border-radius:999px;padding:5px 5px 5px 13px;font-size:14px;line-height:1.4}
+.tk-chip.active{background:var(--accent);font-weight:700;color:#fff;box-shadow:0 0 0 2px var(--accent-soft),0 0 16px rgba(90,92,230,.45)}
+.tk-chip.searched{background:var(--green-soft);font-weight:600;color:var(--green-ink)}
+.tk-chip.not{background:var(--bar-track);font-weight:500;color:var(--dim);opacity:.7}
+.tk-chip.selectable{padding:3px 5px 3px 13px;background:var(--bar-track)}
+.tk-chip.selectable.on{background:var(--accent);box-shadow:var(--shadow-sm)}
+.tk-chip button.tk-chipmain{cursor:pointer;border:0;background:transparent;padding:0;font:inherit;color:inherit;text-align:left}
+.tk-chip .tk-addedtag{margin-left:6px;border-radius:999px;background:var(--accent-soft);padding:0 6px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--accent-ink)}
+.tk-chip.active .tk-addedtag{background:rgba(255,255,255,.25);color:#fff}
+.tk-chiprm{margin-left:4px;display:inline-flex;height:18px;width:18px;flex-shrink:0;cursor:pointer;align-items:center;justify-content:center;border-radius:999px;border:0;background:var(--surface);font-size:11px;font-weight:700;line-height:1;color:var(--ink-2);opacity:.8;font-family:inherit}
+.tk-stageicon{display:flex;width:22px;flex:none;justify-content:center;padding-top:2px}
+.tk-stagecheck{display:flex;height:20px;width:20px;align-items:center;justify-content:center;border-radius:999px;background:var(--green)}
+.tk-stagedot{display:block;height:10px;width:10px;border-radius:999px;margin-top:3px}
+.tk-ringpending{display:block;height:18px;width:18px;border-radius:999px;border:2px solid var(--dim);opacity:.5;margin-top:2px}
+.tk-stagepill{border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.tk-stagepill.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-stagepill.accent{background:var(--accent);color:#fff}
+.tk-stagepill.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-stagepill.grey{background:var(--bar-track);color:var(--ink-2)}
+.tk-stagedetail{margin-top:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);padding:12px 14px}
+.tk-detailhead{font-size:11.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.tk-siterow{display:flex;align-items:baseline;gap:10px;border-radius:12px;background:var(--wash);padding:8px 14px}
+.tk-sitenum{flex-shrink:0;font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--dim)}
+.tk-statepill{display:inline-flex;white-space:nowrap;border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:700}
+.tk-statepill.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-statepill.red{background:var(--red-soft);color:var(--red-ink)}
+.tk-statepill.amber{background:var(--amber-soft);color:var(--amber-ink)}
+.tk-statepill.grey{background:var(--bar-track);color:var(--ink-2)}
+.tk-rulecheck{margin-top:2px;display:flex;height:20px;width:20px;flex-shrink:0;align-items:center;justify-content:center;border-radius:6px;border:2px solid var(--dim);background:transparent;color:transparent;font-size:13px;font-weight:700;line-height:1;opacity:.6;cursor:pointer;font-family:inherit;padding:0}
+.tk-rulecheck.on{border-color:var(--accent);background:var(--accent);color:#fff;opacity:1}
+.tk-pillinput{border-radius:999px;border:1px solid var(--border);background:var(--surface);padding:8px 16px;font-size:14.5px;color:var(--text);font-family:inherit;min-width:0}
+.tk-pillinput::placeholder{color:var(--dim)}
+.tk-textarea{width:100%;border-radius:14px;border:1px solid var(--border);background:var(--surface);padding:12px 16px;font-size:14.5px;line-height:1.55;color:var(--text);font-family:inherit}
+.tk-textarea::placeholder{color:var(--dim)}
+.tk-titlepill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:var(--accent);padding:5px 13px;font-size:14px;font-weight:700;line-height:1.4;color:#fff;box-shadow:0 0 0 2px var(--accent-soft),0 0 16px rgba(90,92,230,.45)}
+.tk-liveact{display:flex;align-items:flex-start;gap:10px;font-size:15px}
+.tk-surfpill{border-radius:999px;background:var(--surface);padding:2px 10px;font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.tk-actpill{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;white-space:nowrap}
+.tk-actpill.green{background:var(--green-soft);color:var(--green-ink)}
+.tk-actpill.accent{background:var(--accent-soft);color:var(--accent-ink)}
+.tk-themebtn{display:inline-flex;cursor:pointer;align-items:center;gap:10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);padding:8px 8px 8px 16px;font-size:14.5px;font-weight:700;color:var(--text);box-shadow:var(--shadow-sm);font-family:inherit}
+.tk-switchtrack{position:relative;display:inline-block;height:24px;width:42px;flex-shrink:0;border-radius:999px;transition:background .2s;background:var(--bar-track)}
+.tk-switchtrack.on{background:var(--accent)}
+.tk-switchknob{position:absolute;top:3px;left:3px;display:block;height:18px;width:18px;border-radius:999px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.tk-switchtrack.on .tk-switchknob{left:21px}
+.tk-topbtn{position:fixed;bottom:20px;right:20px;z-index:50;display:flex;height:44px;width:44px;cursor:pointer;align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:var(--accent);color:#fff;box-shadow:0 10px 28px rgba(30,27,75,.28);font-family:inherit}
+.tk-selbtn{cursor:pointer;border:0;border-radius:999px;padding:6px 16px;font-size:13.5px;font-weight:700;font-family:inherit;box-shadow:var(--shadow-sm)}
+.tk-selbtn.accentsoft{background:var(--accent-soft);color:var(--accent-ink)}
+.tk-selbtn.accent{background:var(--accent);color:#fff}
+.tk-foldchev{margin-left:auto;height:20px;width:20px;flex-shrink:0;color:var(--dim);transition:transform .2s}
+.tk-foldchev.closed{transform:rotate(-90deg)}
+#codesBox .card,#settingsBox .card,#activityBox .card{border-radius:var(--radius);box-shadow:var(--shadow);background:var(--surface)}
+[data-theme="dark"] body{background:#101218;color:#eef0f6}
+[data-theme="dark"] .card{background:#1a1d26;color:#eef0f6}
+
 </style>
 </head>
 <body>
@@ -1360,265 +1554,964 @@ function startDashPoll(){
     }catch(e){}
   }, 60000);
 }
+
+/* ===== Sweep Tracker port — helpers, theme, gauges ===== */
+function tkTime(iso){
+  if(!iso) return "";
+  const d = new Date(iso);
+  if(isNaN(d)) return "";
+  return d.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit", timeZoneName:"short" });
+}
+function tkFull(iso){
+  if(!iso) return "—";
+  const d = new Date(iso);
+  if(isNaN(d)) return "—";
+  const day = d.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric", year:"numeric" });
+  return day + " · " + tkTime(iso);
+}
+function tkDay(dateStr){
+  if(!dateStr) return "";
+  const d = new Date(String(dateStr).slice(0, 10) + "T12:00:00");
+  if(isNaN(d)) return String(dateStr);
+  return d.toLocaleDateString("en-US", { weekday:"short", month:"short", day:"numeric" });
+}
+function tkDur(ms){
+  let t = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+  if(h > 0) return h + "h " + String(m).padStart(2, "0") + "m";
+  if(m > 0) return m + "m " + String(s).padStart(2, "0") + "s";
+  return s + "s";
+}
+function tkGauge(value, tone){
+  const color = tone === "green"? "var(--green)" : tone === "amber"? "var(--amber)" : tone === "red"? "var(--red)" : "var(--accent)";
+  const soft = tone === "green"? "var(--green-soft)" : tone === "amber"? "var(--amber-soft)" : tone === "red"? "var(--red-soft)" : "var(--accent-soft)";
+  const digits = String(Math.abs(Math.trunc(value || 0))).length;
+  const size = digits >= 4? 24 : digits === 3? 30 : 38;
+  return '<span class="tk-gauge" role="img" aria-label="' + esc(String(value || 0)) + '">'
+    + '<svg viewBox="0 0 104 104" style="display:block;height:104px;width:104px" aria-hidden="true">'
+    + '<circle cx="52" cy="52" r="40" fill="' + soft + '"></circle>'
+    + '<circle cx="52" cy="52" r="40" fill="none" stroke="' + color + '" stroke-width="3" stroke-linecap="round"></circle></svg>'
+    + '<span class="tk-gaugenum" style="font-size:' + size + 'px">' + esc(String(value || 0)) + '</span></span>';
+}
+function tkDonut(pct, tone){
+  const a = Math.max(0, Math.min(100, Math.round(pct || 0)));
+  const stroke = tone === "green"? "var(--green)" : tone === "amber"? "var(--amber)" : tone === "red"? "var(--red)" : "var(--dim)";
+  const C = (2 * Math.PI * 40).toFixed(2);
+  const off = (2 * Math.PI * 40 * (1 - a / 100)).toFixed(2);
+  return '<span class="tk-donut"><svg viewBox="0 0 104 104" style="display:block;height:104px;width:104px">'
+    + '<circle cx="52" cy="52" r="40" fill="none" stroke="var(--pill-bg)" stroke-width="10"></circle>'
+    + '<circle cx="52" cy="52" r="40" fill="none" stroke="' + stroke + '" stroke-width="10" stroke-linecap="round" stroke-dasharray="' + C + '" stroke-dashoffset="' + off + '" transform="rotate(-90 52 52)" style="transition:stroke-dashoffset 1s ease-out"></circle></svg>'
+    + '<span class="tk-donutnum">' + a + '%</span></span>';
+}
+function tkVerdictTone(v){
+  const t = String(v || "").toLowerCase();
+  if(/(fail|violat|not followed|not met|missed|breach|incorrect)/.test(t)) return "red";
+  if(/(pass|followed|\bmet\b|verified|compliant|correct|\bok\b|\byes\b|ready|recorded|email-confirmed)/.test(t)) return "green";
+  return "amber";
+}
+function tkThemeGet(){
+  try{
+    const s = localStorage.getItem("getMeAJob:theme");
+    if(s === "light" || s === "dark") return s;
+  }catch(e){}
+  try{ if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark"; }catch(e){}
+  return "light";
+}
+function tkThemeInit(){
+  const t = tkThemeGet();
+  document.documentElement.setAttribute("data-theme", t);
+  document.documentElement.style.colorScheme = t;
+}
+function tkThemeToggle(){
+  const next = tkThemeGet() === "light"? "dark" : "light";
+  try{ localStorage.setItem("getMeAJob:theme", next); }catch(e){}
+  tkThemeInit();
+  renderDashboard();
+}
+tkThemeInit();
+
+/* dashboard UI state (view-only; never persisted) */
+let DASH_UI = { panel:null, check:null, step:null, selecting:false, selLanes:[], titlesFolded:true, selectingTitles:false, selTitles:[], addTitlesOpen:false, rulesFolded:true, funnelIdx:0, titlesMsg:"", rulesMsg:"", lanesMsg:"", restartRejected:false };
+let OPEN_LANE = null;
+let DASH_TICK = null;
+let DASH_COUNT = 60;
+
+/* ===== filings panels — tracker tables ===== */
+function renderFilings(){
+  const box = $("#filingsBox"); if(!box) return;
+  const todays = filingsToday();
+  const all = STORE.filings.filings || [];
+  const panel = DASH_UI.panel;
+  const timeOf = f => tkTime(f.filed_at);
+  let html = '<div style="text-align:right;margin-top:12px"><button class="tk-rowbtn track" id="btnAddFiling">+ Record a filing</button></div><div id="addFilingBox"></div>';
+
+  if(panel === "filed"){
+    const filed = todays.filter(f => f.status === "filed");
+    const older = all.filter(f => f.status === "filed" && String(f.filed_at || "").slice(0, 10) !== todayStr());
+    const bySource = {};
+    filed.forEach(f => { const s = f.where || "Not noted"; (bySource[s] = bySource[s] || []).push(f); });
+    const groups = Object.keys(bySource).map(s => ({ label: s, rows: bySource[s].slice().sort((a, b) => String(b.filed_at).localeCompare(String(a.filed_at))) }))
+      .sort((a, b) => b.rows.length - a.rows.length || a.label.localeCompare(b.label));
+    const checkCell = f => {
+      if(!f.check) return "";
+      const tone = tkVerdictTone(f.check.verdict);
+      const key = f.id;
+      const open = DASH_UI.check === key;
+      return '<button type="button" class="tk-checkbtn ' + tone + '" data-check="' + esc(key) + '" aria-expanded="' + open + '">'
+        + '<span aria-hidden="true">' + (tone === "red"? "✕" : "✓") + '</span>Secondary check' + (f.check.verdict? ' · ' + esc(f.check.verdict) : '') + '</button>';
+    };
+    const rowHtml = (f, groupLabel) => {
+      const tone = f.check? tkVerdictTone(f.check.verdict) : "green";
+      const open = f.check && DASH_UI.check === f.id;
+      let h = '<tr>'
+        + '<td class="co">' + esc(f.company) + '</td>'
+        + '<td class="dim2">' + esc(f.role) + '</td>'
+        + '<td><span class="tk-where green">' + esc(f.where || "Not noted") + '</span></td>'
+        + '<td>' + checkCell(f) + '</td>'
+        + '<td class="time">' + esc(timeOf(f)) + '</td></tr>';
+      if(open){
+        const rules = (f.check && f.check.rules) || [];
+        h += '<tr><td colspan="5" style="background:var(--wash);padding:16px">'
+          + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><span style="font-size:15px;font-weight:700">Secondary check record</span>'
+          + '<span class="tk-rulepill ' + tone + '"><span aria-hidden="true">' + (tone === "red"? "✕" : "✓") + '</span>' + esc(f.check.verdict || "recorded") + '</span>'
+          + '<span style="font-size:13px;color:var(--dim)">' + rules.length + ' ' + (rules.length === 1? "rule" : "rules") + ' checked</span></div>'
+          + '<p style="margin:6px 0 0;font-size:13.5px;color:var(--dim)">Filed ' + esc(fmtDateTime(f.filed_at)) + (f.where? ' · via ' + esc(f.where) : '') + '</p>'
+          + (rules.length
+            ? '<ul style="list-style:none;margin:12px 0 0;padding:0;display:flex;flex-direction:column;gap:12px">' + rules.map(r => {
+                const rt = tkVerdictTone(r.status);
+                return '<li style="display:flex;align-items:flex-start;gap:10px;font-size:14.5px">'
+                  + '<span class="tk-rulepill ' + rt + '"><span aria-hidden="true">' + (rt === "red"? "✕" : rt === "green"? "✓" : "•") + '</span>' + esc(r.status) + '</span>'
+                  + '<span style="min-width:0"><span style="display:block;font-weight:700;line-height:1.35">' + esc(r.rule) + '</span>'
+                  + (r.evidence? '<span style="display:block;margin-top:2px;line-height:1.45;color:var(--ink-2)">' + esc(r.evidence) + '</span>' : '') + '</span></li>';
+              }).join("") + '</ul>'
+            : '<p style="margin:8px 0 0;font-size:14px;color:var(--dim)">This check recorded no individual rules.</p>')
+          + '</td></tr>';
+      }
+      return h;
+    };
+    html += '<div class="tk-card" style="margin-top:20px;padding:20px 22px 10px" aria-label="All filed positions today">'
+      + '<div class="tk-panelhead"><h3>All filed positions today</h3>'
+      + '<span class="tk-countpill green">' + filed.length + ' filed</span>'
+      + '<span style="font-size:13px;font-weight:600;color:var(--dim)">Grouped by the Filed card’s tags · newest first in each group</span>'
+      + '<button type="button" class="tk-closebtn" data-closepanel>Close</button></div>';
+    if(filed.length){
+      html += '<table class="tk-table" aria-label="All filed positions today"><colgroup><col style="width:19%"><col style="width:25%"><col style="width:15%"><col style="width:24%"><col style="width:17%"></colgroup>'
+        + '<thead><tr><th>Company</th><th>Role</th><th>Where filed</th><th>Secondary check</th><th class="r">Time</th></tr></thead><tbody>';
+      groups.forEach(g => {
+        html += '<tr><td colspan="5" style="background:var(--wash);padding:10px 12px"><span class="tk-grouplabel">' + esc(g.label) + '</span><span style="margin-left:8px;font-size:12.5px;font-weight:600;color:var(--dim)">' + g.rows.length + ' filed</span></td></tr>';
+        g.rows.forEach(f => { html += rowHtml(f, g.label); });
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<p style="padding:16px 0;font-size:15.5px;color:var(--ink-2)">No filing details yet today — each filing’s company, role and time will appear here as the hunt reports them.</p>';
+    }
+    if(older.length){
+      const old = older.slice().sort((a, b) => String(b.filed_at).localeCompare(String(a.filed_at)));
+      html += '<h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:18px 0 4px">Filed earlier · ' + old.length + '</h4>'
+        + '<table class="tk-table" aria-label="Filings from earlier days"><colgroup><col style="width:19%"><col style="width:25%"><col style="width:15%"><col style="width:24%"><col style="width:17%"></colgroup><tbody>'
+        + old.map(f => rowHtml(f)).join("") + '</tbody></table>';
+    }
+    html += '</div>';
+  }
+
+  if(panel === "parked"){
+    const parked = all.filter(f => f.status === "parked").slice().sort((a, b) => String(b.filed_at).localeCompare(String(a.filed_at)));
+    const bySource = {};
+    parked.forEach(f => { const s = f.where || "Not noted"; bySource[s] = (bySource[s] || 0) + 1; });
+    const pills = Object.keys(bySource).map(s => ({ label: s, count: bySource[s] })).sort((a, b) => b.count - a.count);
+    html += '<div class="tk-card" style="margin-top:20px;padding:20px 22px 10px" aria-label="All parked jobs">'
+      + '<div class="tk-panelhead"><h3>All parked jobs</h3>'
+      + '<span class="tk-countpill amber">' + parked.length + ' parked</span>'
+      + '<button type="button" class="tk-closebtn" data-closepanel>Close</button></div>'
+      + (pills.length? '<div style="margin:12px 0 8px"><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)">Parked by source</span>'
+        + '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + pills.map(p => '<span class="tk-srcpill" style="background:var(--amber-soft);color:var(--amber-ink)">' + esc(p.label) + ' · ' + p.count + '</span>').join("") + '</div></div>' : '')
+      + '<p class="tk-sub" style="margin:8px 0">Confirmation emails in your connected mailbox are matched to these automatically. Submitted one with no confirmation email? Tap <b>Mark as filed</b> on it.</p>';
+    if(parked.length){
+      html += '<table class="tk-table" aria-label="All parked jobs with the reason each was parked"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:12%"><col style="width:26%"><col style="width:10%"><col style="width:18%"></colgroup>'
+        + '<thead><tr><th>Company</th><th>Role</th><th>Where</th><th>Why parked</th><th class="r">Time</th><th class="r">Action</th></tr></thead><tbody>'
+        + parked.map(f => '<tr><td class="co">' + esc(f.company) + '</td>'
+          + '<td class="dim2">' + esc(f.role || "—") + '</td>'
+          + '<td><span class="tk-where amber">' + esc(f.where || "Not noted") + '</span></td>'
+          + '<td class="dim2">' + esc(f.reason || "") + '</td>'
+          + '<td class="time">' + esc(timeOf(f)) + '</td>'
+          + '<td style="text-align:right"><span style="display:inline-flex;flex-direction:column;gap:6px;align-items:flex-end">'
+          + '<button type="button" class="tk-rowbtn accent" data-markfiled="' + esc(f.id) + '">Mark as filed</button>'
+          + '<button type="button" class="tk-rowbtn amber" data-relaunch="' + esc(f.id) + '">Relaunch</button></span></td></tr>').join("")
+        + '</tbody></table>';
+    } else {
+      html += '<p style="padding:16px 0;font-size:15.5px;color:var(--ink-2)">Nothing parked right now.</p>';
+    }
+    html += '</div>';
+  }
+
+  if(panel === "rejected"){
+    const rejected = all.filter(f => f.status === "rejected").slice().sort((a, b) => String(b.filed_at).localeCompare(String(a.filed_at)));
+    const bySource = {};
+    rejected.forEach(f => { const s = f.where || "Not noted"; bySource[s] = (bySource[s] || 0) + 1; });
+    const pills = Object.keys(bySource).map(s => ({ label: s, count: bySource[s] })).sort((a, b) => b.count - a.count);
+    html += '<div class="tk-card" style="margin-top:20px;padding:20px 22px 10px" aria-label="All rejected jobs">'
+      + '<div class="tk-panelhead"><h3>All rejected jobs</h3>'
+      + '<span class="tk-countpill red">' + rejected.length + ' rejected</span>'
+      + '<button type="button" class="tk-closebtn" data-closepanel>Close</button></div>'
+      + (pills.length? '<div style="margin:12px 0 8px"><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)">Rejected by source</span>'
+        + '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">' + pills.map(p => '<span class="tk-srcpill" style="background:var(--red-soft);color:var(--red-ink)">' + esc(p.label) + ' · ' + p.count + '</span>').join("") + '</div></div>' : '')
+      + '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0 8px">'
+      + '<button type="button" class="tk-rowbtn" id="btnRestartRejected" style="background:var(--red);color:#fff;padding:10px 20px;font-size:15.5px;box-shadow:var(--shadow-sm)"' + (DASH_UI.restartRejected? ' disabled' : '') + '>' + (DASH_UI.restartRejected? 'Restart requested' : 'Restart the process') + '</button>'
+      + '<span style="font-size:13.5px;color:var(--dim)">Runs the rejected jobs through evaluation again</span></div>'
+      + (DASH_UI.restartRejected? '<p class="tk-statusline" role="status">Restart requested — the rejected jobs will be run through evaluation again on the next run.</p>' : '');
+    if(rejected.length){
+      html += '<table class="tk-table" aria-label="All rejected jobs with the reason each was rejected"><colgroup><col style="width:16%"><col style="width:18%"><col style="width:12%"><col style="width:28%"><col style="width:10%"><col style="width:16%"></colgroup>'
+        + '<thead><tr><th>Company</th><th>Role</th><th>Where</th><th>Why rejected</th><th class="r">Time</th><th class="r">Retry</th></tr></thead><tbody>'
+        + rejected.map(f => '<tr><td class="co">' + esc(f.company) + '</td>'
+          + '<td class="dim2">' + esc(f.role || "—") + '</td>'
+          + '<td><span class="tk-where red">' + esc(f.where || "Not noted") + '</span></td>'
+          + '<td class="dim2">' + esc(f.reason || "") + '</td>'
+          + '<td class="time">' + esc(timeOf(f)) + '</td>'
+          + '<td style="text-align:right"><button type="button" class="tk-rowbtn red" data-retry="' + esc(f.id) + '">Retry</button></td></tr>').join("")
+        + '</tbody></table>';
+    } else {
+      html += '<p style="padding:16px 0;font-size:15.5px;color:var(--ink-2)">Nothing rejected.</p>';
+    }
+    html += '</div>';
+  }
+
+  box.innerHTML = html;
+  const add = $("#btnAddFiling");
+  if(add) add.addEventListener("click", () => {
+    $("#addFilingBox").innerHTML = `
+    <div class="tk-card" style="margin-top:12px;padding:18px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div><label class="f">Company</label><input type="text" id="afCompany"></div>
+        <div><label class="f">Role</label><input type="text" id="afRole"></div>
+        <div><label class="f">Where filed</label><input type="text" id="afWhere" placeholder="Board, employer site, or ATS name"></div>
+        <div><label class="f">Outcome</label><select id="afStatus"><option value="filed">Filed</option><option value="parked">Parked</option><option value="rejected">Rejected</option></select></div>
+      </div>
+      <label class="f">Note / reason</label><input type="text" id="afReason">
+      <div class="mt"><button class="btn small" id="afSave">Save filing</button></div>
+    </div>`;
+    $("#afSave").addEventListener("click", saveFiling);
+  });
+  $$("[data-closepanel]").forEach(b => b.addEventListener("click", () => { DASH_UI.panel = null; renderDashboard(); }));
+  $$("[data-check]").forEach(b => b.addEventListener("click", () => {
+    const k = b.getAttribute("data-check");
+    DASH_UI.check = DASH_UI.check === k? null : k;
+    renderFilings();
+  }));
+  $$("[data-relaunch]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-relaunch"), "relaunch")));
+  $$("[data-retry]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-retry"), "retry")));
+  $$("[data-markfiled]").forEach(b => b.addEventListener("click", () => markFilingFiled(b.getAttribute("data-markfiled"), b)));
+  const rr = $("#btnRestartRejected");
+  if(rr) rr.addEventListener("click", async () => {
+    try{
+      STORE.runs.requests = Array.isArray(STORE.runs.requests)? STORE.runs.requests : [];
+      STORE.runs.requests.push({ id: uid("req"), kind: "reprocess-rejected", at: nowISO() });
+      await storeSave("runs", "Restart rejected evaluations");
+      await logActivity("control", "Restart requested for rejected jobs — they will be run through evaluation again on the next run.");
+      DASH_UI.restartRejected = true;
+      renderFilings();
+    }catch(e){ banner("Could not record the restart: " + esc(e.message || String(e)), "err"); }
+  });
+}
+
+
+/* ===== coverage lanes — tracker tiles + drill-down ===== */
+function laneEntry(lane){
+  const runs = STORE.runs;
+  return ((runs.current_run && runs.current_run.lanes) || []).find(x => x.name === lane.name) || null;
+}
+function laneState(lane){
+  const runs = STORE.runs;
+  const e = laneEntry(lane);
+  const total = e && typeof e.total === "number"? e.total : (lane.kind === "board"? 1 : (lane.sites || []).length);
+  const done = e && typeof e.done === "number"? e.done : 0;
+  if(e){
+    if(e.status === "searching") return { word: "Searching", tone: "amber", pct: total? Math.round(100 * done / total) : 0, done, total, detail: e.detail || "", entry: e };
+    if(e.status === "done") return { word: "Done", tone: "green", pct: 100, done: total, total, detail: e.detail || "", entry: e };
+    if(e.status === "manual") return { word: "Manual", tone: "dim", pct: 0, done, total, detail: e.detail || "", entry: e };
+    if(e.status === "stopped") return { word: "Stopped", tone: "red", pct: total? Math.round(100 * done / total) : 0, done, total, detail: e.detail || "", entry: e };
+    return { word: runs.state === "running"? "Waiting" : "Not searched", tone: "dim", pct: 0, done, total, detail: e.detail || "", entry: e };
+  }
+  if(runs.state === "idle" && runs.history && runs.history.length){
+    const h = runs.history[0];
+    const he = ((h && h.lanes) || []).find(x => x.name === lane.name);
+    if(he && he.status === "done") return { word: "Done", tone: "green", pct: 100, done: total, total, detail: he.detail || "", entry: he };
+    if(he && he.status === "manual") return { word: "Manual", tone: "dim", pct: 0, done, total, detail: he.detail || "", entry: he };
+  }
+  return { word: runs.state === "running"? "Waiting" : "Not searched", tone: "dim", pct: 0, done, total, detail: "", entry: null };
+}
+function laneJobs(lane){
+  const sites = (lane.sites || []).map(s => String(s).toLowerCase());
+  return (STORE.filings.filings || []).filter(f => {
+    if(String(f.filed_at || "").slice(0, 10) !== todayStr()) return false;
+    const co = String(f.company || "").toLowerCase();
+    return co && sites.some(s => s.includes(co) || co.includes(s.replace(/^https?:\/\//, "").split("/")[0]));
+  });
+}
+function openLanePanel(idx){
+  const saved = STORE.coverage.saved || { lanes: [] };
+  const lane = (saved.lanes || [])[idx]; if(!lane) return;
+  OPEN_LANE = idx;
+  const box = $("#lanePanel"); if(!box) return;
+  const st = laneState(lane);
+  const jobs = laneJobs(lane);
+  const tonePill = st.tone === "green"? "green" : st.tone === "amber"? "amber" : st.tone === "red"? "red" : "grey";
+  const unitLine = lane.kind === "board"? "Searched in your browser" : st.done + "/" + st.total + " employers searched";
+  let html = '<div class="tk-card" style="margin-top:16px;padding:20px 22px" aria-label="' + esc(lane.name) + ' — all entries">'
+    + '<div class="tk-panelhead"><h3>' + esc(lane.name) + ' — all entries</h3>'
+    + '<span class="tk-statepill ' + tonePill + '" style="text-transform:uppercase;font-size:11.5px;letter-spacing:.05em">' + esc(st.word) + '</span>'
+    + '<span class="tk-countpill track">' + (lane.sites || []).length + ' ' + ((lane.sites || []).length === 1? "website" : "websites") + '</span>'
+    + '<span class="tk-countpill track">' + esc(unitLine) + '</span>'
+    + '<span class="tk-countpill track">' + jobs.length + ' ' + (jobs.length === 1? "item" : "items") + '</span>'
+    + '<button type="button" class="tk-closebtn" id="btnLaneClose">Close</button></div>'
+    + (st.detail? '<p style="max-width:680px;font-size:14.5px;line-height:1.55;color:var(--ink-2);margin:4px 0 0">' + esc(st.detail) + '</p>' : '')
+    + '<div style="margin-top:16px"><h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:0">Websites in this lane · ' + (lane.sites || []).length + '</h4>'
+    + ((lane.sites || []).length
+      ? '<ol style="list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:1fr;gap:6px">' + lane.sites.map((s, i) => '<li class="tk-siterow"><span class="tk-sitenum">' + (i + 1) + '.</span><span style="min-width:0;word-break:break-word;font-size:14.5px;font-weight:600;color:var(--ink-2)">' + esc(s) + '</span></li>').join("") + '</ol>'
+      : '<p style="margin-top:3px;color:var(--ink-2)">No websites are saved for this lane yet.</p>')
+    + '</div>';
+  if(jobs.length){
+    html += '<div style="margin-top:16px"><h4 style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:0">Jobs from this lane · ' + jobs.length + '</h4>'
+      + '<table class="tk-table" style="font-size:15px" aria-label="Jobs dispositioned by ' + esc(lane.name) + ' today"><colgroup><col style="width:25%"><col style="width:14%"><col style="width:37%"><col style="width:24%"></colgroup>'
+      + '<thead><tr><th>Job</th><th>Where</th><th>Outcome</th><th class="r">Action</th></tr></thead><tbody>'
+      + jobs.map(f => {
+          if(f.status === "filed") return '<tr><td><span style="display:block;font-weight:700">' + esc(f.company) + '</span>' + (f.role? '<span style="display:block;margin-top:2px;font-size:14px;color:var(--ink-2)">' + esc(f.role) + '</span>' : '') + '</td>'
+            + '<td><span class="tk-where grey">' + esc(f.where || "") + '</span></td>'
+            + '<td><span class="tk-statepill green">✓ Filed</span>' + (f.filed_at? '<span style="margin-left:8px;font-size:13px;color:var(--dim)">' + esc(tkTime(f.filed_at)) + '</span>' : '') + '</td>'
+            + '<td style="text-align:right;font-size:13.5px;color:var(--dim)">Completed</td></tr>';
+          const parked = f.status === "parked";
+          return '<tr><td><span style="display:block;font-weight:700">' + esc(f.company) + '</span>' + (f.role? '<span style="display:block;margin-top:2px;font-size:14px;color:var(--ink-2)">' + esc(f.role) + '</span>' : '') + '</td>'
+            + '<td><span class="tk-where grey">' + esc(f.where || "") + '</span></td>'
+            + '<td><span class="tk-statepill ' + (parked? "amber" : "red") + '">' + (parked? "Parked" : "Rejected") + '</span>'
+            + '<span style="display:block;margin-top:4px;line-height:1.4;color:var(--ink-2)">' + esc(f.reason || "") + '</span></td>'
+            + '<td style="text-align:right"><button type="button" class="tk-rowbtn accent" data-' + (parked? 'relaunch="' : 'retry="') + esc(f.id) + '">' + (parked? "Relaunch" : "Retry") + '</button></td></tr>';
+        }).join("")
+      + '</tbody></table></div>';
+  }
+  html += '<div style="margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;border-top:1px solid var(--border);padding-top:16px">'
+    + '<button type="button" class="tk-rowbtn accentsoft" id="btnLaneRestart" style="padding:10px 20px;font-size:15px">Restart ' + esc(lane.name) + '</button>'
+    + '<button type="button" class="tk-rowbtn track" id="btnLanePriority" style="padding:10px 20px;font-size:15px">Toggle priority</button>'
+    + '<span id="laneCtlMsg" style="font-size:13.5px;color:var(--dim)"></span></div>'
+    + '</div>';
+  box.innerHTML = html;
+  const panel = box.firstElementChild;
+  if(panel && panel.scrollIntoView) panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  $("#btnLaneClose").addEventListener("click", () => { OPEN_LANE = null; box.innerHTML = ""; });
+  $("#btnLanePriority").addEventListener("click", () => laneControl(lane, "priority"));
+  $("#btnLaneRestart").addEventListener("click", () => laneControl(lane, "restart"));
+  $$("#lanePanel [data-relaunch]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-relaunch"), "relaunch")));
+  $$("#lanePanel [data-retry]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-retry"), "retry")));
+}
+
+/* ===== titles — tracker section writers ===== */
+async function titlesSave(msg){
+  try{
+    await storeSave("coverage", msg || "Update titles");
+  }catch(e){ banner("Saving titles failed: " + esc(e.message || String(e)), "err"); }
+}
+async function titlesAddFromText(text){
+  const cov = STORE.coverage;
+  cov.saved = cov.saved || { titles: [], lanes: [] };
+  cov.removed_titles = Array.isArray(cov.removed_titles)? cov.removed_titles : [];
+  cov.added_titles = Array.isArray(cov.added_titles)? cov.added_titles : [];
+  const incoming = String(text || "").split(/[\n,]+/).map(s => s.trim().replace(/\s+/g, " ")).filter(Boolean);
+  if(!incoming.length){ DASH_UI.titlesMsg = "Paste at least one title first — one per line, or separated by commas."; renderDashboard(); return; }
+  const have = new Set((cov.saved.titles || []).map(t => t.toLowerCase()));
+  const removedMap = new Map(cov.removed_titles.map(t => [t.toLowerCase(), t]));
+  const seen = new Set();
+  let added = 0, restored = 0, skipped = 0, tooLong = 0;
+  for(const t of incoming){
+    const k = t.toLowerCase();
+    if(seen.has(k)){ skipped++; continue; }
+    seen.add(k);
+    if(t.length > 120){ tooLong++; continue; }
+    if(have.has(k)){ skipped++; continue; }
+    if(removedMap.has(k)){
+      cov.removed_titles = cov.removed_titles.filter(x => x.toLowerCase() !== k);
+      cov.saved.titles.push(removedMap.get(k));
+      restored++; continue;
+    }
+    cov.saved.titles.push(t);
+    cov.added_titles.push(t);
+    added++;
+  }
+  if(!added && !restored){
+    DASH_UI.titlesMsg = skipped > 0 && !tooLong? "Nothing new to add — every pasted title is already on the list." : "Nothing could be added — check the titles and try again.";
+    renderDashboard(); return;
+  }
+  const parts = [];
+  if(added) parts.push(added + (added === 1? " title" : " titles") + " added");
+  if(restored) parts.push(restored + " restored");
+  if(skipped) parts.push(skipped + " already on the list, skipped");
+  if(tooLong) parts.push(tooLong + " too long, skipped");
+  DASH_UI.titlesMsg = parts.join(" · ") + " — searched as title families from the next run.";
+  DASH_UI.addTitlesOpen = false;
+  await titlesSave("Add titles");
+  await logActivity("setup", "Titles updated: " + DASH_UI.titlesMsg);
+  renderDashboard();
+}
+async function titlesRemove(title){
+  const cov = STORE.coverage;
+  cov.saved = cov.saved || { titles: [], lanes: [] };
+  cov.removed_titles = Array.isArray(cov.removed_titles)? cov.removed_titles : [];
+  cov.added_titles = Array.isArray(cov.added_titles)? cov.added_titles : [];
+  const k = title.toLowerCase();
+  if(cov.added_titles.some(t => t.toLowerCase() === k)){
+    cov.added_titles = cov.added_titles.filter(t => t.toLowerCase() !== k);
+    cov.saved.titles = (cov.saved.titles || []).filter(t => t.toLowerCase() !== k);
+  } else {
+    cov.saved.titles = (cov.saved.titles || []).filter(t => t.toLowerCase() !== k);
+    if(!cov.removed_titles.some(t => t.toLowerCase() === k)) cov.removed_titles.push(title);
+  }
+  DASH_UI.selTitles = DASH_UI.selTitles.filter(t => t !== title);
+  DASH_UI.titlesMsg = "“" + title + "” removed — it will not be searched from the next run. Restore it any time below the list.";
+  await titlesSave("Remove title");
+  renderDashboard();
+}
+async function titlesRestore(){
+  const cov = STORE.coverage;
+  cov.saved = cov.saved || { titles: [], lanes: [] };
+  const back = Array.isArray(cov.removed_titles)? cov.removed_titles : [];
+  back.forEach(t => { if(!(cov.saved.titles || []).some(x => x.toLowerCase() === t.toLowerCase())) cov.saved.titles.push(t); });
+  cov.removed_titles = [];
+  DASH_UI.titlesMsg = "Removed titles restored — the full list is searched again from the next run.";
+  await titlesSave("Restore titles");
+  renderDashboard();
+}
+async function titlesScopeRequest(){
+  const titles = DASH_UI.selTitles.slice();
+  if(!titles.length) return;
+  try{
+    STORE.runs.requests = Array.isArray(STORE.runs.requests)? STORE.runs.requests : [];
+    STORE.runs.requests.push({ id: uid("req"), kind: "title-scope", titles, at: nowISO() });
+    await storeSave("runs", "Title scope request");
+    await logActivity("control", "Title search requested — the next hunt searches only these " + titles.length + " titles: " + titles.join(", ") + ".");
+    DASH_UI.titlesMsg = "Search requested — the next hunt will search only these " + titles.length + " title " + (titles.length === 1? "family" : "families") + ".";
+    DASH_UI.selectingTitles = false;
+    renderDashboard();
+  }catch(e){ banner("Could not save the title search: " + esc(e.message || String(e)), "err"); }
+}
+
+
+/* ===== dashboard — line-by-line port of the Sweep Tracker ===== */
+function tkRunTitles(){
+  const reqs = (STORE.runs.requests || []).filter(r => r.kind === "title-scope");
+  if(reqs.length && (reqs[reqs.length - 1].titles || []).length) return reqs[reqs.length - 1].titles.slice();
+  return null;
+}
 function renderDashboard(){
   headActions('<button class="btn ghost small" id="btnHeadSettings">Settings</button> <button class="btn ghost small" id="btnHeadDisc3">Sign out</button>');
   const ds = $("#btnHeadDisc3"); if(ds) ds.addEventListener("click", signOut);
   const st = $("#btnHeadSettings"); if(st) st.addEventListener("click", () => { location.hash = "#settings"; renderDashboard(); });
   banner("");
   const todays = filingsToday();
-  const counts = { filed:0, parked:0, rejected:0 };
+  const counts = { filed: 0, parked: 0, rejected: 0 };
   todays.forEach(f => { if(counts[f.status] != null) counts[f.status]++; });
   const runs = STORE.runs;
   const cur = runs.current_run;
   const evaluated = todays.length + ((cur && cur.evaluated_extra) || 0);
-  const saved = STORE.coverage.saved || { titles:[], lanes:[] };
+  const saved = STORE.coverage.saved || { titles: [], lanes: [] };
   const comp = completeness();
-
-  /* stale saved set: generated before the field-lane guarantee — offer a one-click repair */
-  const fieldWord = titleFieldWord(STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "");
-  const fieldStem = fieldWord? fieldWord.toLowerCase().slice(0,6) : "";
-  const hasFieldLane = !fieldStem || (saved.lanes||[]).some(l => l.kind === "sector" && l.name.toLowerCase().includes(fieldStem));
-  const staleCoverage = !!(fieldStem && (saved.titles||[]).length && !hasFieldLane);
-
-  /* live state — only while the hunt engine genuinely reported within 15 minutes */
+  const fieldWord = titleFieldWord(STORE.coverage.specified_title || ((STORE.profile.detection || {}).titles || [])[0] || (saved.titles || [])[0] || "");
+  const fieldStem = fieldWord? fieldWord.toLowerCase().slice(0, 6) : "";
+  const hasFieldLane = !fieldStem || (saved.lanes || []).some(l => l.kind === "sector" && l.name.toLowerCase().includes(fieldStem));
+  const staleCoverage = !!(fieldStem && (saved.titles || []).length && !hasFieldLane);
   const engineFresh = !!(runs.state === "running" && cur && cur.engine_updated_at &&
-    (Date.now() - new Date(cur.engine_updated_at).getTime()) < 15*60*1000);
-  const engineStale = !!(runs.state === "running" && cur && !engineFresh);
-  const searchingLanes = engineFresh? (cur.lanes||[]).filter(l => l.status === "searching") : [];
-  const fmtElapsed = iso => {
-    if(!iso) return "";
-    let ms = Date.now() - new Date(iso).getTime(); if(ms < 0) ms = 0;
-    const m = Math.floor(ms/60000), h = Math.floor(m/60);
-    return h? h+"h "+(m%60)+"m" : m+"m";
-  };
-
-  /* NOW SEARCHING row — the tracker format: small label + frosted pill naming what is being searched */
-  const nowSearching = engineFresh? `
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px">
-    <span class="label" style="margin:0">Now searching</span>
-    <span class="pill violet livepill" style="font-size:13.5px;padding:9px 16px"><span class="livedot"></span><b>${esc(searchingLanes.length? searchingLanes[0].name : "Hunt engine")}</b>&nbsp;· ${searchingLanes.length > 1? searchingLanes.length+" lanes searching · " : ""}${saved.titles.length} titles in this hunt</span>
-  </div>` : "";
-  const runLine = cur && cur.started_at? `<p class="sub small" style="margin-top:12px">This run · Started ${esc(fmtDateTime(cur.started_at))} · ${esc(fmtElapsed(cur.started_at))} total</p>` : "";
-  const staleNote = engineStale? '<p class="sub" style="margin-top:8px;color:var(--amber-ink)">No update in over 15 minutes — this run may be stalled.</p>' : "";
-
-  /* LIVE HUNT panel — the tracker's live browser panel, fed by the engine's real reports */
-  const freshFiling = todays.filter(f => f.status === "filed" && f.filed_at && (Date.now() - new Date(f.filed_at).getTime()) < 15*60*1000)
-    .sort((a,b) => new Date(b.filed_at) - new Date(a.filed_at))[0];
-  const acts = [];
-  if(engineFresh && freshFiling) acts.push({ title:"Filing — "+freshFiling.company+" · "+freshFiling.role, line:"Filing an application — "+(freshFiling.where || "Job board")+" · "+freshFiling.company+" — "+freshFiling.role });
-  if(engineFresh) searchingLanes.forEach(l => acts.push({ title:l.name+" — searching", line:"Searching — "+l.name+(l.detail? " · "+l.detail : "") }));
-  const latestAct = (STORE.activity.entries || [])[0];
-  const livePanel = `
-  <h2 class="dashh dsec">Live hunt</h2>
-  <div class="card" style="margin-top:10px;padding:0;overflow:hidden">
-    <div style="display:flex;align-items:center;gap:10px;background:#EFE9DA;padding:12px 16px">
-      <span style="display:inline-flex;gap:7px"><i style="width:11px;height:11px;border-radius:50%;background:#E0655F;display:inline-block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E3B34E;display:inline-block"></i><i style="width:11px;height:11px;border-radius:50%;background:#7FB069;display:inline-block"></i></span>
-      <span class="pill" style="background:#fff">${esc(engineFresh? (searchingLanes.length? searchingLanes[0].name+" search" : "Hunt engine") : "Hunt engine")}</span>
-      <span style="flex:1"></span>
-      ${engineFresh? '<span class="pill" style="background:#D64545;color:#fff">● LIVE</span>' : '<span class="pill grey">IDLE</span>'}
-    </div>
-    <div style="height:3px;background:#EFE8D8;overflow:hidden">${engineFresh? '<div class="liveprog"></div>' : ""}</div>
-    <div style="padding:20px 22px">
-      <p class="label">Now viewing</p>
-      <p style="font-size:19px;font-weight:700;margin:2px 0 0">${esc(engineFresh? (acts.length? acts[0].title : "Hunt engine — running") : "Working now")}</p>
-      ${engineFresh && acts.length? `<p class="sub" style="margin-top:12px"><b style="color:var(--ink)">Doing right now:</b> ${esc(acts[0].line)}</p>
-      <p class="sub small" style="margin-top:6px">${acts.length > 1? "Also happening right now: "+esc(acts.slice(1).map(a => a.title).join(" · ")) : "Nothing else happening right now — only the work above is in progress at this moment."}</p>` :
-      engineFresh? '<p class="sub" style="margin-top:12px">The engine is running — its next report will appear here as it works.</p>' :
-      '<p class="sub" style="margin-top:12px">The hunt is idle right now. When a run starts, this panel shows what it is viewing and searching, as it happens.</p>'}
-      ${latestAct? `<p class="sub small" style="margin-top:14px"><span class="label" style="margin:0">Latest from the hunt</span> · ${esc(fmtDateTime(latestAct.at))} — ${esc(String(latestAct.message||"").length > 190? String(latestAct.message).slice(0,190)+"…" : String(latestAct.message||""))}</p>` : ""}
-      ${engineFresh && saved.titles.length? `<p class="label" style="margin-top:16px">Searching these titles now</p><div>${saved.titles.slice(0,8).map(t => '<span class="pill violet" style="margin:0 6px 6px 0">'+esc(t)+'</span>').join("")}${saved.titles.length > 8? '<span class="pill grey">+'+(saved.titles.length-8)+' more</span>' : ""}</div>` : ""}
-      <p class="sub small" style="margin-top:16px">Updated ${esc(fmtDateTime(STORE_LOADED_AT))} · refreshes with the page every minute</p>
-    </div>
-  </div>`;
-
-  /* TODAY — tracker format: filed-by-source pills above centered ring-gauge cards, label under each gauge */
-  const srcToday = {};
-  todays.filter(f => f.status === "filed").forEach(f => { const s = f.where || "Not noted"; srcToday[s] = (srcToday[s]||0)+1; });
-  const srcPills = Object.entries(srcToday).sort((a,b) => b[1]-a[1]);
-  const srcPillsRow = srcPills.length? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 14px">${srcPills.map(([k,v]) => '<span class="pill green">'+esc(k)+' · '+v+'</span>').join("")}</div>` : "";
-  const countCard = (label, n, tone) => {
-    const pct = label === "Evaluated"? 100 : (evaluated > 0? Math.round(n / evaluated * 100) : 0);
-    const rc = { green:"var(--green)", amber:"var(--amber)", red:"var(--red)", violet:"var(--accent)" }[tone] || "var(--accent)";
-    return `
-    <div class="card" style="text-align:center;margin:0">
-      <div style="width:104px;height:104px;margin:2px auto 0;border-radius:50%;background:conic-gradient(${rc} ${pct}%, #EFE8D8 ${pct}%);display:flex;align-items:center;justify-content:center">
-        <div style="width:86px;height:86px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center">
-          <span class="big">${n}</span>
-        </div>
-      </div>
-      <div style="font-size:15.5px;font-weight:600;color:var(--ink2);margin-top:4px">${label}</div>
-    </div>`;
-  };
-
-  /* this run totals line */
-  let runTotals = "";
-  if(cur && cur.started_at){
-    const rf = (STORE.filings.filings || []).filter(f => f.filed_at && f.filed_at >= cur.started_at);
-    const rc2 = { filed:0, parked:0, rejected:0 };
-    rf.forEach(f => { if(rc2[f.status] != null) rc2[f.status]++; });
-    runTotals = `<p class="sub" style="text-align:center;margin-top:24px">This run — Filed ${rc2.filed} · Evaluated ${rf.length + ((cur.evaluated_extra)||0)} · Parked ${rc2.parked} · Rejected ${rc2.rejected}</p>`;
-  }
-
-  /* stages — engine-reported when present, derived from run state otherwise */
-  const stageDefs = [
+    (Date.now() - new Date(cur.engine_updated_at).getTime()) < 15 * 60 * 1000);
+  const lastRun = (runs.history || [])[0] || null;
+  const runLive = runs.state === "running" && !!cur;
+  const runStale = !!(runLive && !engineFresh && cur.started_at && (Date.now() - new Date(cur.started_at).getTime()) > 15 * 60 * 1000);
+  const stagesSrc = (cur && cur.stages) || (lastRun && lastRun.stages) || null;
+  const stageFallback = [
     ["Preparing", "Your saved titles, lanes and rules are loaded for this run."],
-    ["Discovering", "The hunt engine searches your saved employers' job boards."],
+    ["Discovering", "The hunt engine searches your saved employers’ job boards."],
     ["Evaluating", "Each posting found is checked against your saved titles and rules."],
     ["Filing", "Ready-to-apply leads are queued under Parked — you submit in your browser, then record them as filed."],
     ["Closeout", "Results are saved back to your repo and the run is closed."]
   ];
-  const engineStages = {};
-  if(cur && Array.isArray(cur.stages)) cur.stages.forEach(s => { engineStages[s.name] = s; });
-  const stageChip = s => ({ done:["Done","green"], active:["Active","amber"], queued:["Queued","grey"], stopped:["Stopped","red"] }[s] || ["Queued","grey"]);
-  const stages = stageDefs.map(([name, fallbackDetail], i) => {
-    let state = "queued", detail = fallbackDetail;
-    const es = engineStages[name];
-    if(es){ state = es.state || "queued"; if(es.detail) detail = es.detail; }
-    else if(runs.state === "running"){ state = i < 2? "active" : "queued"; if(i === 1) detail = "Waiting for the hunt engine to report — if this persists, the engine may not be installed yet."; }
-    else if(runs.state === "stopped"){ state = "stopped"; }
-    else if(runs.history && runs.history.length){ state = "done"; detail = "Completed in the last run."; }
-    const [label, cls] = stageChip(state);
-    return '<div class="toggle"><div><b>'+name+'</b><div class="sub small">'+esc(detail)+'</div></div><span class="pill '+cls+'">'+label+'</span></div>';
-  }).join("");
-
-  /* filings by source — bar fill is exactly the printed share */
-  const allF = STORE.filings.filings || [];
-  const srcMap = {};
-  allF.forEach(f => { const s = f.where || "Not noted"; srcMap[s] = (srcMap[s]||0)+1; });
-  const srcRows = Object.entries(srcMap).sort((a,b) => b[1]-a[1]).map(([s,n]) => {
-    const pct = allF.length? Math.round(100*n/allF.length) : 0;
-    return '<div class="srcrow" data-src="'+esc(s)+'"><span class="srcname">'+esc(s)+'</span><span class="bar"><i style="width:'+pct+'%"></i></span><span class="srccount">'+n+' · '+pct+'%</span></div>';
-  }).join("");
-
-  const laneDetail = l => { const e = ((cur && cur.lanes) || []).find(x => x.name === l.name); return e && e.detail? e.detail : ""; };
-  const laneStatusText = l => {
-    const entry = ((cur && cur.lanes) || []).find(x => x.name === l.name);
-    if(!entry || !entry.status) return "";
-    return { searching:"Searching now…", done:"Complete", manual:"Browser lane — see lane detail", skipped:"Skipped this run" }[entry.status] || "";
-  };
-  const laneCards = (saved.lanes||[]).map((l,i) => `
-    <div class="card lane-card" data-lane="${i}" style="margin:0">
-      <div class="flexbetween"><b>${esc(l.name)}</b><span class="pill ${l.kind==="sector"? "violet":"grey"}">${esc(l.kind)}</span></div>
-      <p class="sub small" style="margin:6px 0 0">${l.sites.length} site${l.sites.length===1?"":"s"}</p>
-      <div class="bar"><i style="width:${laneProgress(l)}%"></i></div>
-      <p class="sub small">${laneProgress(l)}% covered${laneStatusText(l)? " · "+esc(laneStatusText(l)) : ""}</p>
-      ${laneDetail(l)? '<p class="sub small">'+esc(laneDetail(l).length > 170? laneDetail(l).slice(0,170)+"…" : laneDetail(l))+'</p>' : ""}
-    </div>`).join("");
-
-  view().innerHTML = `
-  ${comp.complete? "" : '<div class="notice warn">Your profile is '+comp.done+' of '+comp.total+' sections complete. <a href="#" id="lnkFinishProfile">Finish setup →</a></div>'}
-  ${staleCoverage? '<div class="notice warn">Your saved coverage is missing a '+esc(fieldWord)+' employers lane — it was saved by an older version of the generator. <button class="btn small" id="btnFixCoverage">Regenerate &amp; save my coverage</button></div>' : ""}
-  <div class="flexbetween">
-    <div>
-      <h2 class="dashh">Your job hunt</h2>
-      <p class="sub" style="margin:4px 0 0">${esc(todayStr())} · ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? " · coverage saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""} · Updated ${esc(fmtDateTime(STORE_LOADED_AT))}</p>
-    </div>
-    <div>${runs.state === "running"
-        ? '<button class="btn danger" id="btnStopRun">Stop</button>'
-        : '<button class="btn" id="btnStartRun">Start run</button>'}</div>
-  </div>
-  ${nowSearching}
-  ${runLine}
-  ${staleNote}
-  ${livePanel}
-  <h2 class="dashh dsec">Today · ${esc(todayStr())}</h2>
-  ${srcPillsRow}
-  <div class="grid4">
-    ${countCard("Evaluated", evaluated, "violet")}
-    ${countCard("Filed", counts.filed, "green")}
-    ${countCard("Parked", counts.parked, "amber")}
-    ${countCard("Rejected", counts.rejected, "red")}
-  </div>
-  <div class="card mt">
-    <p class="label">Filings by source</p>
-    ${srcRows || '<p class="sub">No filings yet — sources appear here as applications and leads are recorded.</p>'}
-  </div>
-  <div id="filingsBox" class="mt"></div>
-  ${runTotals}
-  <h2 class="dashh dsec">Step by step</h2>
-  <p class="sub" style="margin:-2px 0 12px;max-width:640px">What happened at each step of this run — finished steps first, then the steps live now, then the steps still waiting.</p>
-  <div class="card" style="margin-top:0">
-    ${stages}
-    <p class="sub small">Runs work from your saved coverage only — ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? ", saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}.</p>
-  </div>
-  <div class="card mt" id="engineCard">
-    <p class="label">Hunt engine</p>
-    ${ENGINE_STATE === false
-      ? '<p class="sub">The engine is a small worker that lives in <b>your</b> repo as a GitHub Actions workflow. It searches the real job boards of your saved employers, checks every posting against your saved titles and rules, and writes the progress you see here. Without it, Start has nothing to run.</p><div class="mt"><button class="btn" id="btnInstallEngine">Install the hunt engine</button></div><p class="sub small mt">Free — it runs on GitHub Actions in your own repo. The install needs your token to have <b>Contents</b>, <b>Actions</b> and <b>Workflows</b> (read &amp; write). If GitHub refuses the install, <a href="https://github.com/settings/personal-access-tokens" target="_blank" rel="noopener">open your token settings</a>, add Actions + Workflows to the token you already use, then click Install again — the token itself does not change, so there is nothing to re-paste.</p>'
-      : ENGINE_STATE === true
-        ? '<p class="sub">Installed in your repo ✓ — pressing <b>Start run</b> dispatches it, and it writes real progress back to this page as it searches. Matched postings land under Parked as ready-to-apply leads; the engine never pretends an application was filed.</p><div class="mt"><button class="btn ghost small" id="btnInstallEngine">Reinstall / update engine</button></div>'
-        : '<p class="sub">Checking your repo for the engine… reload the page if this persists.</p>'}
-  </div>
-  <h2 class="dashh dsec">Search coverage</h2>
-  <div id="laneGrid" class="grid3">${laneCards || '<div class="card" style="margin:0"><p class="sub">No saved coverage yet. <a href="#" id="lnkMakeCoverage">Generate &amp; save coverage →</a></p></div>'}</div>
-  <div id="lanePanel"></div>
-  <div class="card mt">
-    <div class="flexbetween">
-      <h2 class="dashh" style="margin:0">Titles searched</h2>
-      <div><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button> <button class="btn ghost small" id="btnRegenCoverage">Regenerate titles &amp; lanes</button></div>
-    </div>
-    <p class="sub small" style="margin-top:6px">${saved.titles.length} titles in this hunt</p>
-    <details class="fold"><summary>Show all titles</summary>
-      <div>${saved.titles.map(t=>'<span class="chip">'+esc(t)+'</span>').join("") || '<span class="sub">None saved yet.</span>'}</div>
-    </details>
-    <p class="sub small">Regenerate builds a fresh draft from your title and the career field detected in your resume. Nothing changes until you save the draft.</p>
-  </div>
-  <div id="dashDraftBox" class="mt"></div>
-  <div class="card mt">
-    <h2 class="dashh" style="margin:0 0 8px">Rules</h2>
-    <div id="rulesBox">${rulesHTML()}</div>
-  </div>
-  <div class="grid2 mt">
-    <div id="codesBox"></div>
-    <div id="activityBox"></div>
-  </div>
-  <div id="settingsBox" class="mt"></div>`;
-
-  const fx = $("#btnFixCoverage"); if(fx) fx.addEventListener("click", async ev => {
-    const btn = ev.currentTarget; setBusy(btn, true, "Regenerating…");
-    try{
-      const t = STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "";
-      const d = await generateCoverage(t);
-      STORE.coverage.saved = { titles: clone(d.titles), lanes: clone(d.lanes), saved_at: nowISO() };
-      STORE.coverage.coverage_saved_at = STORE.coverage.saved.saved_at;
-      await storeSave("coverage", "Coverage regenerated and saved (stale-set repair)");
-      await logActivity("save", "Coverage regenerated and saved from the dashboard repair prompt: "+d.titles.length+" titles, "+d.lanes.length+" lanes.");
-      toast("Coverage fixed — your "+fieldWord+" employers lane now leads the set.");
-      renderDashboard();
-    }catch(e){ banner("Repair hit a problem: "+esc(e.message||String(e)), "err"); setBusy(btn, false); }
+  const stages = stageFallback.map(([name, fb]) => {
+    const es = stagesSrc? stagesSrc.find(s => s.name === name) : null;
+    let state = "pending", detail = fb;
+    if(es){ state = es.state === "done"? "done" : es.state === "active"? "active" : es.state === "stopped"? "stopped" : "pending"; if(es.detail) detail = es.detail; }
+    return { name, state, detail };
   });
+  const activeStage = stages.find(s => s.state === "active") || null;
+  if(DASH_UI.step === null && activeStage) DASH_UI.step = activeStage.name;
+  const searchingLanes = engineFresh && cur? (cur.lanes || []).filter(l => l.status === "searching") : [];
+  const primaryLane = searchingLanes[0] || null;
+  let headline;
+  if(!(saved.titles || []).length && !lastRun && !cur) headline = "Waiting for the next hunt";
+  else if(runs.state === "stopped") headline = "Something went wrong";
+  else if(runLive){
+    if(activeStage && activeStage.name === "Filing") headline = "Filing applications now";
+    else if(activeStage && (activeStage.name === "Discovering" || activeStage.name === "Evaluating")) headline = "Searching for new roles";
+    else if(activeStage && activeStage.name === "Closeout") headline = "Checking everything over";
+    else if(activeStage && activeStage.name === "Preparing") headline = "Getting started";
+    else headline = "Hunt in progress";
+  }
+  else if(lastRun) headline = "Hunt complete";
+  else headline = "Waiting for the next hunt";
+  let nowViewing;
+  if(engineFresh && primaryLane) nowViewing = primaryLane.name + " — " + (primaryLane.detail || "Searching employer job boards.");
+  else if(runLive) nowViewing = "Working now";
+  else if(runs.state === "stopped") nowViewing = "The last run stopped early";
+  else if(lastRun) nowViewing = "Hunt complete — nothing is being viewed right now";
+  else nowViewing = "No hunt is running right now";
+  const actionWord = n => n === "Discovering"? "Searching" : n === "Evaluating"? "Reading a posting" : n === "Filing"? "Filing an application" : "Checking";
+  const doingNow = engineFresh && activeStage? { action: actionWord(activeStage.name), surface: activeStage.name, detail: activeStage.detail || "" } : null;
+  const alsoHappening = searchingLanes.slice(1).map(l => ({ surface: l.name, action: "Searching", detail: l.detail || "Searching employer job boards." }));
+  const latestEntry = (STORE.activity.entries || [])[0];
+  const latestNote = latestEntry && latestEntry.message && latestEntry.message !== nowViewing? latestEntry.message : "";
+  const titlesNow = engineFresh && searchingLanes.length? (cur.titles || saved.titles || []) : [];
+  const runFilings = cur? (STORE.filings.filings || []).filter(f => f.filed_at && f.filed_at >= cur.started_at) : [];
+  const incoming = runFilings.map(f => f.role).filter(Boolean);
+  window.__tkIncoming = incoming;
+  const runRef = cur || lastRun;
+  let runTotals = "";
+  if(runRef && runRef.started_at){
+    const rf = (STORE.filings.filings || []).filter(f => f.filed_at && f.filed_at >= runRef.started_at && (!runRef.ended_at || f.filed_at <= runRef.ended_at));
+    const rc = { filed: 0, parked: 0, rejected: 0 };
+    rf.forEach(f => { if(rc[f.status] != null) rc[f.status]++; });
+    runTotals = '<p style="margin-top:20px;text-align:center;font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim)" aria-label="Current run totals">This run — Filed ' + rc.filed + ' · Evaluated ' + (rf.length + (runRef.evaluated_extra || 0)) + ' · Parked ' + rc.parked + ' · Rejected ' + rc.rejected + '</p>';
+  }
+  const bySource = list => {
+    const m = {};
+    list.forEach(f => { const s = f.where || "Not noted"; m[s] = (m[s] || 0) + 1; });
+    return Object.keys(m).map(s => ({ label: s, count: m[s] })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  };
+  const filedPills = bySource(todays.filter(f => f.status === "filed"));
+  const parkedPills = bySource(todays.filter(f => f.status === "parked"));
+  const rejectedPills = bySource(todays.filter(f => f.status === "rejected"));
+  const pillRow = (pills, ink, label) => pills.length? '<span class="tk-cardpills" role="list" aria-label="' + label + '">' + pills.map(p => '<span role="listitem" class="tk-srcpill" style="color:' + ink + '">' + esc(p.label) + ' · ' + p.count + '</span>').join("") + '</span>' : "";
+  const chev = open => '<span aria-hidden="true" style="display:inline-block;transition:transform .2s;' + (open? 'transform:rotate(90deg)' : '') + '">›</span>';
+  const theme = tkThemeGet();
+  const sunSvg = '<svg viewBox="0 0 20 20" style="height:18px;width:18px;flex-shrink:0;color:var(--amber)" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="currentColor"></circle><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M15.8 4.2l-1.4 1.4M5.6 14.4l-1.4 1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg>';
+  const moonSvg = '<svg viewBox="0 0 20 20" style="height:18px;width:18px;flex-shrink:0;color:var(--accent)" fill="none" aria-hidden="true"><path d="M16.5 13.5A7.5 7.5 0 1 1 6.5 3.5a6 6 0 0 0 10 10Z" fill="currentColor" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"></path></svg>';
+
+  let controls = "";
+  if(ENGINE_STATE === false){
+    controls = '<button type="button" class="tk-bigbtn green" id="btnInstallEngine">Install the hunt engine</button>'
+      + '<p class="tk-caption">The hunt engine is not installed in your data repo yet — nothing can run until it is. One tap installs it; then Start runs real searches.</p>'
+      + '<p class="tk-statusline" id="tkInstallHelp">If install fails with a 403, your GitHub token needs the Actions and Workflows permissions (read &amp; write): GitHub → Settings → Developer settings → Personal access tokens → your token → add them, then tap Install again.</p>';
+  } else if(runLive){
+    controls = '<button type="button" class="tk-bigbtn red" id="btnStopRun">Stop hunt</button>';
+  } else {
+    controls = '<button type="button" class="tk-bigbtn green" id="btnStartRun">Start hunt</button>'
+      + '<p class="tk-caption">' + (runs.state === "stopped"? "The last run stopped early — tap Start to run a new one now." : "The hunt is ready — tap Start to run a search now.") + '</p>';
+  }
+
+  const stageOrder = { done: 0, active: 1, stopped: 2, pending: 3 };
+  const sortedStages = stages.map((s, i) => ({ ...s, i })).sort((a, b) => stageOrder[a.state] - stageOrder[b.state] || a.i - b.i);
+  const stageRows = sortedStages.map((s, h) => {
+    const open = DASH_UI.step === s.name;
+    const icon = s.state === "done"
+      ? '<span class="tk-stagecheck"><svg viewBox="0 0 14 14" style="display:block;height:11px;width:11px" fill="none"><path d="M2.5 7.5 5.5 10.5 11.5 3.5" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>'
+      : s.state === "active" ? '<span class="tk-stagedot tk-livedot" style="background:var(--accent)"></span>'
+      : s.state === "stopped" ? '<span class="tk-stagedot" style="background:var(--red)"></span>'
+      : '<span class="tk-ringpending"></span>';
+    const pillCls = s.state === "done"? "green" : s.state === "active"? "accent" : s.state === "stopped"? "red" : "grey";
+    const pillText = s.state === "active"? "Live now" : s.state;
+    const summary = s.state === "active"? "Happening now — tap to see what it’s doing live"
+      : s.state === "stopped"? "Stopped — tap to see what stopped it"
+      : s.detail || (s.state === "done"? "Done" : "Hasn’t started yet");
+    let detail = "";
+    if(open){
+      let inner = "";
+      if(s.state === "active"){
+        inner = '<p class="tk-detailhead" style="color:var(--red)"><span class="tk-livedot" style="display:inline-block;height:7px;width:7px;border-radius:999px;background:var(--red);margin-right:6px" aria-hidden="true"></span>Happening now — live</p>'
+          + (searchingLanes.length && s.name === "Discovering"
+            ? '<ul style="list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:10px">' + searchingLanes.map(l => '<li style="font-size:14.5px"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span class="tk-actpill accent">Searching</span></span><span style="display:block;margin-top:4px;line-height:1.45;color:var(--ink-2)">' + esc(l.name) + (l.detail? ' — ' + esc(l.detail) : '') + '</span></li>').join("") + '</ul>'
+            : '<p style="margin-top:8px;font-size:14.5px;line-height:1.45;color:var(--ink-2)">' + esc(s.detail || "Live now — this step hasn’t reported its current work yet; its next update will appear here as the hunt reports it.") + '</p>');
+      } else if(s.state === "stopped"){
+        inner = '<p class="tk-detailhead" style="color:var(--red-ink)">What stopped it</p><p style="margin-top:8px;font-size:14.5px;line-height:1.45;color:var(--ink-2)">' + esc(s.detail || "The hunt hasn’t said what stopped this step yet.") + '</p>';
+      } else if(s.state === "done"){
+        inner = '<p class="tk-detailhead" style="color:var(--dim)">What it did</p><p style="margin-top:8px;font-size:14.5px;line-height:1.45;color:var(--ink-2)">' + esc(s.detail || "This step finished; the hunt didn’t leave a note for it.") + '</p>';
+      } else {
+        inner = '<p style="font-size:14.5px;line-height:1.45;color:var(--dim)">Hasn’t started yet — it begins once the steps before it finish.</p>';
+      }
+      detail = '<div class="tk-stagedetail" role="region" aria-label="Detail for step ' + (h + 1) + ': ' + esc(s.name) + '">' + inner + '</div>';
+    }
+    return '<li style="display:flex;gap:12px;padding:14px 0;' + (h > 0? 'border-top:1px solid var(--border);' : '') + (s.state === "active"? 'margin:4px 0;border-radius:10px;background:var(--wash);padding-left:10px;padding-right:10px;' : '') + '">'
+      + '<span class="tk-stageicon" aria-hidden="true">' + icon + '</span>'
+      + '<span style="min-width:0;flex:1"><button type="button" data-stage="' + esc(s.name) + '" aria-expanded="' + open + '" style="display:block;width:100%;cursor:pointer;border:0;background:transparent;padding:0;text-align:left;font-family:inherit">'
+      + '<span style="display:flex;flex-wrap:wrap;align-items:center;gap:8px"><strong style="font-size:15px;font-weight:700">' + (h + 1) + '. ' + esc(s.name) + '</strong>'
+      + '<span class="tk-stagepill ' + pillCls + '">' + esc(pillText) + '</span>'
+      + '<svg viewBox="0 0 12 12" style="margin-left:auto;height:13px;width:13px;flex:none;color:var(--dim);transition:transform .2s;' + (open? 'transform:rotate(180deg)' : '') + '" fill="none" aria-hidden="true"><path d="M2 4 6 8 10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>'
+      + '<span style="margin-top:2px;display:block;word-break:break-word;font-size:14.5px;line-height:1.4;color:var(--ink-2)">' + esc(summary) + '</span></button>'
+      + detail + '</span></li>';
+  }).join("");
+
+  let tkHtml = `
+  <div class="tk-wrap">
+  <div style="margin-bottom:24px;display:flex;align-items:center;justify-content:flex-end">
+    <button type="button" role="switch" aria-checked="${theme === "light"}" aria-label="Light mode toggle" class="tk-themebtn" id="btnTheme">
+      ${theme === "light"? sunSvg : moonSvg}<span>${theme === "light"? "Light mode" : "Dark mode"}</span>
+      <span class="tk-switchtrack ${theme === "light"? "on" : ""}" aria-hidden="true"><span class="tk-switchknob"></span></span>
+    </button>
+  </div>
+  <div id="tkControls" style="margin-bottom:32px;display:flex;flex-direction:column;align-items:flex-start;gap:10px">
+    ${controls}
+  </div>
+  ${comp.complete? "" : '<div class="notice warn">Your profile is ' + comp.done + ' of ' + comp.total + ' sections complete. <a href="#" id="lnkFinishProfile">Finish setup →</a></div>'}
+  ${staleCoverage? '<div class="notice warn">Your saved coverage predates the field-lane update, so the <b>' + esc(fieldWord) + '</b> lane is missing — your hunts are narrower than your title. <a href="#" id="lnkMakeCoverage">Review coverage</a>, or <button class="btn ghost small" id="btnRegenCoverage">Regenerate &amp; save my coverage</button></div><div id="dashDraftBox"></div>' : ""}
+  <header>
+    <div role="status" aria-label="Current hunt status">
+      <h1 class="tk-h1">${esc(headline)}</h1>
+      <p style="margin-top:12px;font-size:15px;color:var(--dim)">Updated ${esc(tkFull(STORE.runs.updated_at || new Date().toISOString()))}</p>
+    </div>
+    ${searchingLanes.length? '<div style="margin-top:30px;display:flex;flex-wrap:wrap;align-items:center;gap:14px"><span style="font-size:12.5px;font-weight:700;letter-spacing:.14em;color:var(--dim)">NOW SEARCHING</span>'
+      + '<span class="tk-frosted" style="display:inline-flex;max-width:100%;align-items:center;gap:9px;border-radius:999px;padding:10px 20px 10px 16px;font-size:16px;box-shadow:var(--shadow-sm)"><span class="tk-nowdot" style="display:inline-block;height:9px;width:9px;flex-shrink:0;border-radius:999px;background:var(--accent)" aria-hidden="true"></span><strong style="font-weight:700">' + esc(searchingLanes.map(l => l.name).join(" · ")) + '</strong>'
+      + (primaryLane && primaryLane.detail? '<span style="min-width:0;word-break:break-word;color:var(--ink-2)">' + esc(primaryLane.detail) + '</span>' : '') + '</span></div>' : ""}
+    ${runRef && runRef.started_at? '<p style="margin-top:16px;font-size:13px;font-variant-numeric:tabular-nums;color:var(--dim)">This run · Started ' + esc(tkTime(runRef.started_at)) + ' · ' + esc(tkDur(((runRef.ended_at? new Date(runRef.ended_at) : new Date()) - new Date(runRef.started_at)))) + ' total</p>' : ""}
+    ${runStale? '<p style="margin-top:16px;max-width:560px;font-size:14px;line-height:1.55;color:var(--amber-ink)" role="alert">No update in over 15 minutes — this run may be stalled.</p>' : ""}
+  </header>
+  <section aria-label="Live hunt" class="tk-section" style="margin-top:48px">
+    <h2 class="tk-h2">Live hunt</h2>
+    <div class="tk-card" style="overflow:hidden">
+      <div style="display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);background:var(--bar-track);padding:10px 16px">
+        <span style="display:flex;gap:6px" aria-hidden="true"><span style="height:10px;width:10px;border-radius:999px;background:var(--red);opacity:.7"></span><span style="height:10px;width:10px;border-radius:999px;background:var(--amber);opacity:.7"></span><span style="height:10px;width:10px;border-radius:999px;background:var(--green);opacity:.7"></span></span>
+        <span style="display:inline-flex;min-width:0;align-items:center;gap:8px;border-radius:999px;background:var(--surface);padding:4px 14px;font-size:13.5px;font-weight:600;color:var(--ink-2)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(primaryLane? primaryLane.name : activeStage? activeStage.name : "Hunt engine")}</span></span>
+        ${engineFresh? '<span style="margin-left:auto;display:inline-flex;flex-shrink:0;align-items:center;gap:6px;border-radius:999px;background:var(--red);padding:2px 10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff"><span class="tk-livedot" style="display:inline-block;height:7px;width:7px;border-radius:999px;background:#fff" aria-hidden="true"></span>Live</span>'
+          : '<span style="margin-left:auto;flex-shrink:0;border-radius:999px;background:var(--surface);padding:2px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)">Idle</span>'}
+      </div>
+      ${engineFresh? '<div style="position:relative;height:3px;overflow:hidden;background:var(--bar-track)" aria-hidden="true"><div class="tk-browserbar" style="position:absolute;top:0;bottom:0;width:40%;border-radius:999px;background:var(--accent)"></div></div>' : ""}
+      <div style="padding:16px 20px">
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:0">Now viewing</p>
+        <p style="margin-top:4px;word-break:break-word;font-size:16.5px;font-weight:600;line-height:1.4">${esc(nowViewing)}</p>
+        ${doingNow? '<p style="margin-top:10px;word-break:break-word;font-size:15px;line-height:1.4;color:var(--ink-2)" role="status" aria-label="What the hunt is doing right now"><span style="font-weight:700;color:var(--text)">Doing right now: ' + esc(doingNow.action) + '</span> — ' + esc(doingNow.surface) + (doingNow.detail? ' · ' + esc(doingNow.detail) : '') + '</p>' : ""}
+        ${alsoHappening.length? '<div style="margin-top:16px;border-radius:14px;background:var(--wash);padding:14px 16px"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:0">Also happening right now — live</p><span style="display:inline-flex;flex-shrink:0;align-items:center;gap:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--red)"><span class="tk-livedot" style="display:inline-block;height:7px;width:7px;border-radius:999px;background:var(--red)" aria-hidden="true"></span>Live</span></div>'
+          + '<ul style="list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:12px">' + alsoHappening.map(a => '<li class="tk-liveact"><span class="tk-livedot" style="margin-top:7px;height:8px;width:8px;flex-shrink:0;border-radius:999px;background:var(--accent)" aria-hidden="true"></span><span style="min-width:0"><span style="display:flex;flex-wrap:wrap;align-items:center;gap:6px"><span class="tk-surfpill">' + esc(a.surface) + '</span><span class="tk-actpill accent">' + esc(a.action) + '</span></span><span style="margin-top:4px;display:block;word-break:break-word;line-height:1.4;color:var(--ink-2)">' + esc(a.detail) + '</span></span></li>').join("") + '</ul>'
+          + '<p style="margin-top:12px;font-size:12.5px;line-height:1.55;color:var(--dim)">Each line is the exact search or posting that surface is working on at this moment — it updates on every refresh as the hunt moves.</p></div>'
+          : engineFresh? '<p style="margin-top:12px;font-size:14.5px;color:var(--dim)" role="status">Nothing else happening right now — only the work above is in progress at this moment.</p>' : ""}
+        ${latestNote? '<p style="margin-top:12px;word-break:break-word;font-size:14px;line-height:1.55;color:var(--ink-2)"><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)">Latest from the hunt · </span>' + esc(latestNote) + '</p>' : ""}
+        ${titlesNow.length? '<div style="margin-top:16px"><p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin:0">Searching these titles now</p><div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px">' + titlesNow.slice(0, 12).map(t => '<span class="tk-titlepill"><span class="tk-livedot" style="display:inline-block;height:7px;width:7px;flex-shrink:0;border-radius:999px;background:#fff" aria-hidden="true"></span>' + esc(t) + '</span>').join("") + (titlesNow.length > 12? '<span style="font-size:13.5px;color:var(--dim)">+' + (titlesNow.length - 12) + ' more</span>' : '') + '</div></div>' : ""}
+        ${!engineFresh? '<p style="margin-top:12px;font-size:14.5px;line-height:1.55;color:var(--dim)">The engine is idle right now. When a search starts, this panel shows what it is viewing and searching, as it happens.</p>' : ""}
+        <p style="margin-top:16px;font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--dim)">Updated ${esc(tkFull(STORE.runs.updated_at || new Date().toISOString()))} · refreshes with the page every minute</p>
+      </div>
+    </div>
+  </section>
+  <section aria-label="Today’s totals" class="tk-section">
+    <h2 class="tk-h2">Today · ${esc(tkDay(todayStr()))}</h2>
+    <div class="tk-todaygrid">
+      <button type="button" class="tk-todaycard tk-frosted-green tk-float" data-panelcard="filed" aria-expanded="${DASH_UI.panel === "filed"}" aria-label="${counts.filed} filed today. Tap to ${DASH_UI.panel === "filed"? "hide" : "see"} all filed positions today" style="align-items:center">
+        ${tkGauge(counts.filed, "green")}
+        <span class="tk-tlabel" style="color:var(--green-ink)">Filed</span>
+        <span class="tk-tap" style="color:var(--green-ink)">Tap to see all filed today ${chev(DASH_UI.panel === "filed")}</span>
+        ${pillRow(filedPills, "var(--green-ink)", "Today’s filed applications by source")}
+      </button>
+      <div class="tk-todaycard tk-float" style="background:var(--surface);align-items:center">
+        ${tkGauge(evaluated, "accent")}
+        <span class="tk-tlabel" style="color:var(--ink-2)">Evaluated</span>
+        <div class="tk-funnelbox" role="img" aria-label="${incoming.length && engineFresh? "Animation of applications dropping into a funnel to be evaluated" : "Funnel the evaluated applications passed through — still while no live titles are coming in"}">
+          ${incoming.length && engineFresh? '<span class="tk-funnelchip tk-funnelapp" style="left:14px;animation-delay:0s;--funnel-x:38px;background:var(--accent)" aria-hidden="true"></span><span class="tk-funnelchip tk-funnelapp" style="left:53px;animation-delay:.75s;--funnel-x:0px;background:var(--accent-2)" aria-hidden="true"></span><span class="tk-funnelchip tk-funnelapp" style="left:91px;animation-delay:1.5s;--funnel-x:-38px;background:var(--green)" aria-hidden="true"></span>' : ""}
+          <svg viewBox="0 0 124 62" style="position:absolute;bottom:0;left:0;display:block;height:62px;width:124px" aria-hidden="true"><path d="M6 6 H118 L72 32 V52 H52 V32 Z" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" class="${incoming.length && engineFresh? "tk-funnelglow" : ""}"></path><path d="M22 15 H102" stroke="var(--accent)" stroke-width="1.5" opacity="0.45"></path><path d="M38 23 H86" stroke="var(--accent)" stroke-width="1.5" opacity="0.35"></path></svg>
+        </div>
+        <div style="font-size:12.5px;font-weight:600;color:var(--dim)">${incoming.length && engineFresh? "Applications coming in" : "Applications evaluated"}</div>
+        <div class="tk-incomingpill" role="status" aria-live="polite">${incoming.length && engineFresh? '<span class="tk-incoming" id="tkIncomingTitle">' + esc(incoming[DASH_UI.funnelIdx % incoming.length]) + '</span>' : '<span class="dim">' + (engineFresh? "No verified live titles right now" : runLive? "The last run stalled — no titles coming in" : runs.state === "stopped"? "The last run stopped early" : lastRun? "Hunt finished — no titles coming in" : "No hunt is running — no titles coming in") + '</span>'}</div>
+      </div>
+      <button type="button" class="tk-todaycard tk-frosted-amber tk-float" data-panelcard="parked" aria-expanded="${DASH_UI.panel === "parked"}" aria-label="${counts.parked} parked today. Tap to ${DASH_UI.panel === "parked"? "hide" : "see"} all parked jobs today and why each was parked" style="text-align:left">
+        ${tkGauge(counts.parked, "amber")}
+        <span class="tk-tlabel" style="color:var(--amber-ink)">Parked</span>
+        <span class="tk-tap" style="color:var(--amber-ink)">Tap to see all parked today ${chev(DASH_UI.panel === "parked")}</span>
+        ${pillRow(parkedPills, "var(--amber-ink)", "Today’s parked leads by source").replace("tk-cardpills", "tk-cardpills left")}
+      </button>
+      <button type="button" class="tk-todaycard tk-frosted-red tk-float" data-panelcard="rejected" aria-expanded="${DASH_UI.panel === "rejected"}" aria-label="${counts.rejected} rejected today. Tap to ${DASH_UI.panel === "rejected"? "hide" : "see"} all rejected jobs today and why each was rejected" style="text-align:left">
+        ${tkGauge(counts.rejected, "red")}
+        <span class="tk-tlabel" style="color:var(--red-ink)">Rejected</span>
+        <span class="tk-tap" style="color:var(--red-ink)">Tap to see all rejected today ${chev(DASH_UI.panel === "rejected")}</span>
+        ${pillRow(rejectedPills, "var(--red-ink)", "Today’s rejected leads by source").replace("tk-cardpills", "tk-cardpills left")}
+      </button>
+    </div>
+    <div id="filingsBox"></div>
+    ${runTotals}
+  </section>
+  <section aria-label="Step by step" class="tk-section">
+    <h2 class="tk-h2">Step by step</h2>
+    <p class="tk-sub" style="margin-top:-8px;margin-bottom:16px;max-width:640px">What happened at each step of this run — finished steps first, then the steps live now, then the steps still waiting. Tap any step to see its detail right here — the step marked Live now expands to show exactly what it is doing at this moment.</p>
+    <ol class="tk-card" style="list-style:none;margin:0;padding:8px 20px" aria-label="Every step of this run, finished first, then live, then waiting">${stageRows}</ol>
+  </section>`;
+
+  /* ----- search coverage ----- */
+  const laneStates = (saved.lanes || []).map(l => laneState(l));
+  const covCounts = { searching: 0, done: 0, stopped: 0, blocked: 0, manual: 0 };
+  laneStates.forEach(s => {
+    if(s.word === "Searching") covCounts.searching++;
+    else if(s.word === "Done") covCounts.done++;
+    else if(s.word === "Stopped") covCounts.stopped++;
+    else if(s.word === "Blocked") covCounts.blocked++;
+    else if(s.word === "Manual") covCounts.manual++;
+  });
+  const covSummary = (covCounts.searching? covCounts.searching + " searching · " : "") + covCounts.done + " finished"
+    + (covCounts.stopped? " · " + covCounts.stopped + " stopped early" : "") + (covCounts.blocked? " · " + covCounts.blocked + " blocked" : "")
+    + (covCounts.manual? " · " + covCounts.manual + " manual" : "");
+  const tiles = (saved.lanes || []).map((lane, idx) => {
+    const s = laneStates[idx];
+    const selected = DASH_UI.selLanes.includes(lane.name);
+    const prio = (STORE.runs.lane_controls || []).some(c => c.lane === lane.name && c.action === "priority");
+    const cls = s.tone === "green"? "tk-frosted-green" : s.tone === "amber"? "tk-frosted-amber" : s.tone === "red"? "tk-frosted-red" : "track";
+    const statusInk = s.tone === "red"? "font-weight:600;color:var(--red-ink)" : s.tone === "green"? "color:var(--green-ink)" : s.tone === "amber"? "font-weight:600;color:var(--amber-ink)" : "color:var(--ink-2)";
+    const unitLine = lane.kind === "board"? "Searched in your browser" : s.done + "/" + s.total + " employers searched";
+    const barColor = s.tone === "amber"? "var(--amber)" : s.tone === "green"? "var(--green)" : s.tone === "red"? "var(--red)" : "var(--dim)";
+    return '<li style="height:100%"><button type="button" class="tk-tile ' + cls + (selected? " selected" : "") + '" data-tile="' + idx + '" '
+      + (DASH_UI.selecting? 'aria-pressed="' + selected + '"' : 'aria-expanded="' + (OPEN_LANE === idx) + '"')
+      + ' aria-label="' + esc(lane.name) + ': ' + esc(s.word) + ' · ' + esc(unitLine) + (s.detail? '. ' + esc(s.detail) : '') + (DASH_UI.selecting? '. Tap to ' + (selected? "deselect" : "select") + ' this lane' : '. Tap to see all the websites and jobs for this lane') + '">'
+      + (DASH_UI.selecting? '<span class="tk-checkbadge' + (selected? " on" : "") + '" aria-hidden="true"><svg viewBox="0 0 12 12" style="display:block;height:12px;width:12px" fill="none"><path d="M2 6.5 4.8 9 10 3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>' : "")
+      + '<span class="tk-tilename"' + (DASH_UI.selecting? ' style="padding:0 24px"' : '') + '>' + esc(lane.name)
+      + (prio? '<span class="tk-prioritytag">PRIORITY</span>' : '')
+      + (DASH_UI.selecting && selected? '<span class="tk-selectedtag">✓ SELECTED</span>' : '') + '</span>'
+      + '<span style="margin-top:12px" role="img" aria-label="' + esc(lane.name) + ' coverage ' + s.pct + '%">' + tkDonut(s.pct, s.tone) + '</span>'
+      + '<span class="tk-tilestatus" style="' + statusInk + '">'
+      + (s.word === "Searching"? '<span class="tk-spinner tk-spin" aria-hidden="true"></span>' : '<span class="tk-dot8" style="background:' + (s.tone === "red"? "var(--red)" : s.tone === "green"? "var(--green)" : "var(--dim)") + '" aria-hidden="true"></span>')
+      + esc(s.word) + ' · ' + esc(unitLine) + '</span>'
+      + '<span style="margin-top:6px;display:block;font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink-2)">' + esc(unitLine) + '</span>'
+      + (s.word === "Searching" && s.detail? '<span style="margin-top:6px;display:block;word-break:break-word;font-size:13px;line-height:1.4;color:var(--amber-ink)">Searching now: ' + esc(s.detail.length > 120? s.detail.slice(0, 120) + "…" : s.detail) + '</span>' : "")
+      + '<span class="tk-bar" role="progressbar" aria-label="' + esc(lane.name) + ' coverage progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + s.pct + '"><span class="tk-bartrack"><span class="tk-barfill' + (s.word === "Searching"? " tk-barlive" : "") + '" style="width:' + s.pct + '%;background:' + barColor + '"></span></span></span>'
+      + ((lane.sites || []).length? '<span class="tk-sitesline">' + (lane.sites || []).length + ' sites</span>' : "")
+      + '</button></li>';
+  }).join("");
+  const selLaneObjs = (saved.lanes || []).filter(l => DASH_UI.selLanes.includes(l.name));
+
+  /* ----- titles ----- */
+  const allTitles = saved.titles || [];
+  const removedTitles = Array.isArray(STORE.coverage.removed_titles)? STORE.coverage.removed_titles : [];
+  const addedTitles = Array.isArray(STORE.coverage.added_titles)? STORE.coverage.added_titles : [];
+  const lastRunTitles = new Set(((lastRun && lastRun.titles) || []).map(t => String(t).toLowerCase()));
+  const searchedCount = allTitles.filter(t => lastRunTitles.has(String(t).toLowerCase())).length;
+  const searchingTitlesNow = engineFresh? titlesNow : [];
+  const scopeReq = (runs.requests || []).filter(r => r.kind === "title-scope").pop();
+  const chipHtml = t => {
+    const isAdded = addedTitles.some(x => x.toLowerCase() === String(t).toLowerCase());
+    const searched = lastRunTitles.has(String(t).toLowerCase());
+    const addedTag = isAdded? '<span class="tk-addedtag">Added by you</span>' : "";
+    const rmBtn = '<button type="button" class="tk-chiprm" data-titleremove="' + esc(t) + '" aria-label="Remove title ' + esc(t) + '">✕</button>';
+    if(DASH_UI.selectingTitles){
+      const on = DASH_UI.selTitles.includes(t);
+      return '<span role="listitem" class="tk-chip selectable' + (on? " on" : "") + '"><button type="button" class="tk-chipmain" data-titleselect="' + esc(t) + '" aria-pressed="' + on + '" style="' + (on? "font-weight:700;color:#fff" : "font-weight:500;color:var(--ink-2);opacity:.85") + '">' + (on? "✓ " : "") + esc(t) + (isAdded? '<span class="tk-addedtag"' + (on? ' style="background:rgba(255,255,255,.25);color:#fff"' : '') + '>Added by you</span>' : "") + '</button>' + rmBtn + '</span>';
+    }
+    return '<span role="listitem" class="tk-chip ' + (searched? "searched" : "not") + '" aria-label="' + esc(t) + (isAdded? " (added by you)" : "") + ': ' + (searched? "searched" : "not searched yet") + '">' + (searched? "✓ " : "") + esc(t) + addedTag + rmBtn + '</span>';
+  };
+
+  /* ----- rules ----- */
+  const R = STORE.rules;
+  const rulesSetCount = (R.remote_only? 1 : 0) + (R.minimum_pay? 1 : 0) + ((R.always_reject || []).length? 1 : 0) + ((R.focus_sectors || []).length? 1 : 0) + (R.extra_notes? 1 : 0);
+  const rulesDefault = R.remote_only && !R.minimum_pay && !(R.always_reject || []).length && !(R.focus_sectors || []).length && !R.extra_notes;
+  const rulesPill = rulesDefault? '<span class="tk-countpill green">Standard hunt rules</span>' : '<span class="tk-countpill accent">Custom — ' + rulesSetCount + ' of 5 rules set</span>';
+  const ruleRow = (name, desc, control, tag) => '<li style="display:flex;align-items:flex-start;gap:8px;padding:12px 0;border-top:1px solid var(--border)">' + control
+    + '<span style="min-width:0;flex:1"><span style="display:block;font-size:15px;font-weight:600">' + esc(name) + (tag? '<span style="margin-left:8px;border-radius:999px;background:var(--bar-track);padding:1px 8px;font-size:11.5px;font-weight:700;color:var(--ink-2)">' + esc(tag) + '</span>' : '') + '</span>'
+    + '<span style="margin-top:2px;display:block;font-size:13.5px;line-height:1.55;color:var(--ink-2)">' + desc + '</span></span></li>';
+
+  tkHtml += `
+  <section aria-label="Search coverage" class="tk-section">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px">
+      <h2 class="tk-h2" style="margin:0">Search coverage</h2>
+      <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+        <p style="font-size:12px;color:var(--dim);margin:0">${esc(covSummary)}</p>
+        <button type="button" class="tk-selbtn ${DASH_UI.selecting? "accent" : "accentsoft"}" id="btnSelectLanes" aria-pressed="${DASH_UI.selecting}" aria-label="${DASH_UI.selecting? "Done selecting lanes" : "Select lanes to mark priority or restart"}">${DASH_UI.selecting? "Done" : "Select"}</button>
+      </div>
+    </div>
+    <p class="tk-sub" style="margin-top:-8px;margin-bottom:16px">${DASH_UI.selecting? "Tap lanes to select them — tap again to deselect. Then mark them priority or restart their searches below." : "Tap a lane to see all the websites in that lane, plus every job for it. Tap Select to choose lanes and mark them priority or restart them together."}</p>
+    <p style="margin-top:-4px;margin-bottom:12px;font-size:14px;line-height:1.55;color:var(--ink-2)">Every lane is searched with all ${allTitles.length} titles below — each card counts the employers it has covered.</p>
+    <div style="margin-top:-4px;margin-bottom:16px;display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--dim)" aria-label="Coverage card colour key">
+      <span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--green)" aria-hidden="true"></span> Green — done</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--amber)" aria-hidden="true"></span> Amber — searching now</span>
+      <span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--red)" aria-hidden="true"></span> Red — blocked or stopped</span>
+    </div>
+    ${DASH_UI.selecting? '<div style="margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px"><button type="button" class="tk-selbtn accentsoft" id="btnLanesSelectAll">Select all</button><button type="button" class="tk-selbtn" style="background:var(--bar-track);color:var(--ink-2)" id="btnLanesClear" ' + (DASH_UI.selLanes.length? "" : "disabled") + '>Clear selection</button><span style="font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim)" role="status">' + (DASH_UI.selLanes.length? DASH_UI.selLanes.length + " selected" : "No lanes selected") + '</span></div>' : ""}
+    <div class="tk-card" style="border-radius:28px;padding:24px">
+      ${(saved.lanes || []).length? '<ul class="tk-tilegrid" aria-label="Search coverage by lane">' + tiles + '</ul>' : '<p class="tk-sub">No saved lanes yet — coverage is created in setup step 4.</p>'}
+    </div>
+    ${DASH_UI.selecting && DASH_UI.selLanes.length? '<div class="tk-card" style="margin-top:16px;padding:20px 22px" aria-label="Selected lanes actions">'
+      + '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px"><h3 style="font-size:17px;font-weight:700;margin:0">' + DASH_UI.selLanes.length + ' ' + (DASH_UI.selLanes.length === 1? "lane" : "lanes") + ' selected</h3><span style="min-width:0;word-break:break-word;font-size:13.5px;color:var(--dim)">' + esc(selLaneObjs.map(l => l.name).join(" · ")) + '</span></div>'
+      + '<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px"><button type="button" class="tk-rowbtn accent" id="btnPrioritySelected" style="padding:10px 20px;font-size:15.5px">Mark selected as priority</button>'
+      + '<button type="button" class="tk-rowbtn accentsoft" id="btnRestartSelected" style="padding:10px 20px;font-size:15.5px">Restart selected searches</button>'
+      + '<button type="button" class="tk-rowbtn track" id="btnClearLaneSel" style="padding:10px 20px;font-size:15.5px">Clear selection</button></div>'
+      + (DASH_UI.lanesMsg? '<p class="tk-statusline" style="margin-top:12px" role="status">' + esc(DASH_UI.lanesMsg) + '</p>' : "") + '</div>' : ""}
+    <div id="lanePanel"></div>
+  </section>
+  <section aria-label="Titles searched" class="tk-section">
+    <h2 style="margin:0 0 16px"><button type="button" id="btnTitlesFold" aria-expanded="${!DASH_UI.titlesFolded}" style="display:flex;width:100%;cursor:pointer;align-items:center;gap:12px;border:0;background:transparent;padding:0;text-align:left;font-family:inherit">
+      <span style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--dim)">Titles searched</span>
+      ${lastRun? '<span class="tk-countpill green">' + searchedCount + ' of ' + allTitles.length + ' searched</span>' : ""}
+      ${(addedTitles.length || removedTitles.length)? '<span class="tk-countpill accent">' + allTitles.length + ' titles — ' + (allTitles.length - addedTitles.length) + ' standard' + (addedTitles.length? ' + ' + addedTitles.length + ' added' : '') + (removedTitles.length? ' · ' + removedTitles.length + ' removed' : '') + '</span>' : ""}
+      <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" class="tk-foldchev ${DASH_UI.titlesFolded? "closed" : ""}"><path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button></h2>
+    <div style="margin-top:-4px;margin-bottom:16px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px">
+        <button type="button" class="tk-selbtn ${DASH_UI.selectingTitles? "accent" : "accentsoft"}" id="btnSelectTitles" aria-pressed="${DASH_UI.selectingTitles}">${DASH_UI.selectingTitles? "Done" : "Select titles"}</button>
+        <button type="button" class="tk-selbtn ${DASH_UI.addTitlesOpen? "accent" : "accentsoft"}" id="btnAddTitlesToggle" aria-pressed="${DASH_UI.addTitlesOpen}">Add titles</button>
+        ${DASH_UI.selectingTitles? '<button type="button" class="tk-selbtn accentsoft" id="btnTitlesSelectAll">Select all</button><button type="button" class="tk-selbtn" style="background:var(--bar-track);color:var(--ink-2)" id="btnTitlesClear" ' + (DASH_UI.selTitles.length? "" : "disabled") + '>Clear</button><span style="font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim)" role="status">' + (DASH_UI.selTitles.length? DASH_UI.selTitles.length + " selected" : "No titles selected") + '</span>' : ""}
+      </div>
+      <p class="tk-sub" style="margin-top:8px">${DASH_UI.selectingTitles? "Tap titles to choose exactly which families the next search covers — tap again to deselect. Unselected families are not searched, and stay unsearched until you choose them." : "Searches cover all " + allTitles.length + " title families. Tap Select titles to search only the families you pick instead, or Add titles to grow the list."}</p>
+      ${!DASH_UI.selectingTitles && scopeReq? '<p style="margin-top:8px;font-size:14px;line-height:1.55;color:var(--ink-2)" role="status">Title search requested — the next hunt searches only ' + ((scopeReq.titles || []).length === 1? "this title" : "these " + (scopeReq.titles || []).length + " titles") + ': ' + esc((scopeReq.titles || []).join(", ")) + '.</p>' : ""}
+      ${DASH_UI.titlesMsg? '<p style="margin-top:8px;font-size:14px;color:var(--dim)" role="status">' + esc(DASH_UI.titlesMsg) + '</p>' : ""}
+    </div>
+    ${DASH_UI.addTitlesOpen? '<div class="tk-card" style="margin-bottom:16px;padding:18px" aria-label="Add titles"><h3 style="font-size:15px;font-weight:700;margin:0">Add titles</h3>'
+      + '<p style="margin-top:4px;font-size:14px;line-height:1.55;color:var(--dim)">Paste as many titles as you need — one per line, or separated by commas. Each one joins the list below as its own title family and is searched from the next run. Blanks and titles already on the list are skipped; pasting a removed title restores it.</p>'
+      + '<label style="margin-top:12px;display:block;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)" for="tkAddTitlesText">New titles</label>'
+      + '<textarea id="tkAddTitlesText" class="tk-textarea" rows="6" placeholder="Cloud Security Architect\nAI Solutions Architect, Platform Architect – AI" style="margin-top:6px"></textarea>'
+      + '<div style="margin-top:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px"><button type="button" class="tk-rowbtn accent" id="btnTitlesAdd" style="padding:8px 20px;font-size:14.5px">Add titles</button><button type="button" class="tk-rowbtn track" id="btnTitlesCancelAdd" style="padding:8px 20px;font-size:14.5px">Cancel</button>'
+      + (addedTitles.length? '<span style="font-size:13.5px;font-variant-numeric:tabular-nums;color:var(--dim)" role="status">' + addedTitles.length + ' added so far</span>' : "") + '</div></div>' : ""}
+    ${DASH_UI.titlesFolded && !DASH_UI.selectingTitles? '<div style="margin-bottom:4px"><p style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--dim);margin:0" role="status">' + searchedCount + ' searched' + (searchingTitlesNow.length? ' · ' + Math.min(searchingTitlesNow.length, allTitles.length) + ' searching now' : '') + ' · ' + Math.max(0, allTitles.length - searchedCount) + ' not searched yet</p>'
+      + (searchingTitlesNow.length? '<div style="margin-top:10px;display:flex;flex-wrap:wrap;align-items:center;gap:8px"><span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--dim)">Searching now</span>' + searchingTitlesNow.slice(0, 12).map(t => '<span class="tk-titlepill"><span class="tk-livedot" style="display:inline-block;height:7px;width:7px;flex-shrink:0;border-radius:999px;background:#fff" aria-hidden="true"></span>' + esc(t) + '</span>').join("") + '</div>' : "") + '</div>' : ""}
+    ${(!DASH_UI.titlesFolded || DASH_UI.selectingTitles)? '<div class="tk-card" style="padding:18px" id="titlesPanel">'
+      + '<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px 20px;font-size:12.5px;color:var(--dim)" aria-label="Title status key">'
+      + '<span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--accent)" aria-hidden="true"></span>Searching now — lit up</span>'
+      + '<span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--green)" aria-hidden="true"></span>Searched</span>'
+      + '<span style="display:inline-flex;align-items:center;gap:6px"><span class="tk-dot8" style="background:var(--dim);opacity:.5" aria-hidden="true"></span>Not searched — not lit</span></div>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:8px" role="list" aria-label="All ' + allTitles.length + ' title families">' + allTitles.map(chipHtml).join("") + '</div>'
+      + (allTitles.length? "" : '<p style="padding:8px 0;font-size:14.5px;color:var(--dim)" role="status">Every title has been removed. Add titles above, or restore the removed ones below.</p>')
+      + (removedTitles.length? '<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px"><p style="font-size:13.5px;line-height:1.55;color:var(--dim);margin:0">Removed — not searched: ' + esc(removedTitles.join(", ")) + '</p><button type="button" class="tk-selbtn accentsoft" id="btnTitlesRestore" style="margin-top:8px">Restore removed titles (' + removedTitles.length + ')</button></div>' : "")
+      + '</div>' : ""}
+    ${DASH_UI.selectingTitles && DASH_UI.selTitles.length? '<div class="tk-card" style="margin-top:16px;padding:20px 22px" aria-label="Selected titles actions">'
+      + '<div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px"><h3 style="font-size:17px;font-weight:700;margin:0">' + DASH_UI.selTitles.length + ' ' + (DASH_UI.selTitles.length === 1? "title" : "titles") + ' selected</h3><span style="min-width:0;word-break:break-word;font-size:13.5px;color:var(--dim)">' + esc(DASH_UI.selTitles.join(" · ")) + '</span></div>'
+      + '<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px"><button type="button" class="tk-rowbtn accent" id="btnTitlesScope" style="padding:10px 20px;font-size:15.5px">Search selected titles</button><button type="button" class="tk-rowbtn track" id="btnTitlesClearSel" style="padding:10px 20px;font-size:15.5px">Clear selection</button></div></div>' : ""}
+  </section>
+  <section aria-label="Rules" class="tk-section">
+    <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+      <h2 style="min-width:0;flex:1;margin:0"><button type="button" id="btnRulesFold" aria-expanded="${!DASH_UI.rulesFolded}" style="display:flex;width:100%;cursor:pointer;align-items:center;gap:12px;border:0;background:transparent;padding:0;text-align:left;font-family:inherit">
+        <span style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.13em;color:var(--dim)">Rules</span>
+        ${rulesPill}
+        <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" class="tk-foldchev ${DASH_UI.rulesFolded? "closed" : ""}"><path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+      </button></h2>
+    </div>
+    ${!DASH_UI.rulesFolded? '<div class="tk-card" style="padding:18px" id="rulesPanel">'
+      + '<p style="margin-bottom:8px;font-size:14.5px;line-height:1.55;color:var(--dim)">The rules your hunt follows, from your saved setup. Changes apply from the next run; a run already going keeps the rules it started under.</p>'
+      + '<ul style="list-style:none;margin:0;padding:0">'
+      + ruleRow("Remote only", "Skip anything that is not fully remote — hybrid and onsite roles are rejected; a posting whose own text offers fully remote is eligible.",
+          '<button type="button" class="tk-rulecheck' + (R.remote_only? " on" : "") + '" id="ruleRemoteToggle" aria-pressed="' + !!R.remote_only + '" aria-label="Remote only: ' + (R.remote_only? "followed" : "not followed") + '. Tap to ' + (R.remote_only? "stop following" : "follow") + ' this rule">✓</button>', R.remote_only? "" : "Not followed")
+      + ruleRow("Minimum pay", R.minimum_pay? "Postings must pay at least <b>" + esc(R.minimum_pay) + "</b> — set in the full rule editor, or update it right here." : "No minimum set — postings with any pay, or none stated, stay eligible. Set one right here, or in the full rule editor.",
+          '<span class="tk-rulecheck" style="cursor:default;opacity:.35" aria-hidden="true">✓</span>', R.minimum_pay? "" : "Not set")
+      + '<li style="padding:4px 0 12px 28px"><span style="display:flex;flex-wrap:wrap;gap:10px"><input type="text" id="ruleMinPay" class="tk-pillinput" style="flex:1;min-width:180px" placeholder="e.g. $120,000/yr or $70/hr" value="' + esc(R.minimum_pay || "") + '"><button type="button" class="tk-rowbtn accent" id="btnSaveRules" style="padding:8px 20px;font-size:14.5px">Save minimum pay</button></span></li>'
+      + ruleRow("Always reject", (R.always_reject || []).length? "Never file: " + esc((R.always_reject || []).join(", ")) + "." : "No always-reject terms set — add them in the full rule editor.", '<span class="tk-rulecheck" style="cursor:default;opacity:.35" aria-hidden="true">✓</span>', (R.always_reject || []).length? "" : "Not set")
+      + ruleRow("Focus sectors", (R.focus_sectors || []).length? "Hunts focus on: " + esc((R.focus_sectors || []).join(", ")) + "." : "No focus sectors — every sector is searched.", '<span class="tk-rulecheck" style="cursor:default;opacity:.35" aria-hidden="true">✓</span>', (R.focus_sectors || []).length? "" : "Not set")
+      + ruleRow("Extra notes", R.extra_notes? esc(R.extra_notes) : "No extra notes for the hunt.", '<span class="tk-rulecheck" style="cursor:default;opacity:.35" aria-hidden="true">✓</span>', R.extra_notes? "" : "Not set")
+      + '</ul>'
+      + '<div style="margin-top:8px;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center"><button type="button" class="tk-selbtn accentsoft" id="btnEditRules">Edit all rules</button>'
+      + (DASH_UI.rulesMsg? '<span style="font-size:14px;color:var(--dim)" role="status">' + esc(DASH_UI.rulesMsg) + '</span>' : "") + '</div>'
+      + '</div>' : ""}
+  </section>
+  <section aria-label="Codes" class="tk-section">
+    <h2 class="tk-h2">Codes</h2>
+    <div id="codesBox"></div>
+  </section>
+  <section aria-label="Settings" class="tk-section" id="settings">
+    <h2 class="tk-h2">Settings</h2>
+    <div id="settingsBox"></div>
+  </section>
+  <section aria-label="Latest activity" class="tk-section">
+    <h2 class="tk-h2">Latest activity</h2>
+    <div id="activityBox"></div>
+  </section>
+  <footer style="margin-top:40px;text-align:center;font-size:12px;font-weight:300;line-height:1.55;color:var(--dim)">
+    <p style="margin:0">${runRef && runRef.started_at? "Started " + esc(tkFull(runRef.started_at)) + " · " : ""}Last updated ${esc(tkFull(STORE.runs.updated_at || new Date().toISOString()))}</p>
+    <p style="margin-top:6px"><span aria-label="Next refresh countdown">Refreshes in <span class="tabular" id="tkCountdown" style="font-variant-numeric:tabular-nums">60</span>s</span> · <button type="button" id="btnTkRefresh" style="cursor:pointer;border:0;background:transparent;font-weight:600;color:var(--accent);font-family:inherit;font-size:12px;padding:0">Refresh</button></p>
+  </footer>
+  </div>
+  <button type="button" class="tk-topbtn" id="btnTkTop" aria-label="Back to top of page" title="Back to top"></button>`;
+
+  view().innerHTML = tkHtml;
+
+  /* ----- bindings ----- */
+  const themeBtn = $("#btnTheme"); if(themeBtn) themeBtn.addEventListener("click", tkThemeToggle);
+  const start = $("#btnStartRun"); if(start) start.addEventListener("click", startRun);
+  const stop = $("#btnStopRun"); if(stop) stop.addEventListener("click", stopRun);
+  const ie = $("#btnInstallEngine"); if(ie) ie.addEventListener("click", installEngine);
   const fin = $("#lnkFinishProfile"); if(fin) fin.addEventListener("click", e => { e.preventDefault(); renderVerify(); });
   const mk = $("#lnkMakeCoverage"); if(mk) mk.addEventListener("click", e => { e.preventDefault(); renderWizard(4); });
   const ec = $("#btnEditCoverage"); if(ec) ec.addEventListener("click", () => renderWizard(4));
   const rg = $("#btnRegenCoverage"); if(rg) rg.addEventListener("click", async ev => {
-    const t = STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "";
+    const t = STORE.coverage.specified_title || ((STORE.profile.detection || {}).titles || [])[0] || (saved.titles || [])[0] || "";
     if(!t){ toast("Set your title first — opening the coverage step."); renderWizard(4); return; }
     const btn = ev.currentTarget; setBusy(btn, true, "Generating…");
     try{
       const d = await generateCoverage(t);
       $("#dashDraftBox").innerHTML = draftHTML(d); bindDraft();
       toast("Fresh draft generated from your title and detected career field — review it, then save.");
-    }catch(e){ banner("Regeneration hit a problem: "+esc(e.message||String(e)), "err"); }
+    }catch(e){ banner("Regeneration hit a problem: " + esc(e.message || String(e)), "err"); }
     setBusy(btn, false);
   });
-  const start = $("#btnStartRun"); if(start) start.addEventListener("click", startRun);
-  const stop = $("#btnStopRun"); if(stop) stop.addEventListener("click", stopRun);
-  $$("#laneGrid .lane-card").forEach(card => card.addEventListener("click", () => openLanePanel(parseInt(card.getAttribute("data-lane"),10))));
-  $$(".srcrow").forEach(r => r.addEventListener("click", () => {
-    FILINGS_FILTER = r.getAttribute("data-src") || "";
-    renderFilings();
-    const fb = $("#filingsBox"); if(fb && fb.scrollIntoView) fb.scrollIntoView({ behavior:"smooth" });
+  $$("[data-panelcard]").forEach(c => c.addEventListener("click", () => {
+    const p = c.getAttribute("data-panelcard");
+    DASH_UI.panel = DASH_UI.panel === p? null : p;
+    renderDashboard();
+    const fb = $("#filingsBox"); if(fb && fb.scrollIntoView && DASH_UI.panel) fb.scrollIntoView({ behavior: "smooth", block: "start" });
   }));
-  bindRules();
-  const ie = $("#btnInstallEngine"); if(ie) ie.addEventListener("click", installEngine);
+  $$("[data-stage]").forEach(b => b.addEventListener("click", () => {
+    const n = b.getAttribute("data-stage");
+    DASH_UI.step = DASH_UI.step === n? null : n;
+    renderDashboard();
+  }));
+  const sl = $("#btnSelectLanes"); if(sl) sl.addEventListener("click", () => { DASH_UI.selecting = !DASH_UI.selecting; if(!DASH_UI.selecting) DASH_UI.selLanes = []; DASH_UI.lanesMsg = ""; renderDashboard(); });
+  $$("[data-tile]").forEach(t => t.addEventListener("click", () => {
+    const idx = parseInt(t.getAttribute("data-tile"), 10);
+    const lane = (saved.lanes || [])[idx]; if(!lane) return;
+    if(DASH_UI.selecting){
+      DASH_UI.selLanes = DASH_UI.selLanes.includes(lane.name)? DASH_UI.selLanes.filter(x => x !== lane.name) : [...DASH_UI.selLanes, lane.name];
+      DASH_UI.lanesMsg = "";
+      renderDashboard();
+    } else {
+      if(OPEN_LANE === idx){ OPEN_LANE = null; const lp = $("#lanePanel"); if(lp) lp.innerHTML = ""; renderDashboard(); }
+      else { renderDashboard(); openLanePanel(idx); }
+    }
+  }));
+  const lsa = $("#btnLanesSelectAll"); if(lsa) lsa.addEventListener("click", () => { DASH_UI.selLanes = (saved.lanes || []).map(l => l.name); renderDashboard(); });
+  const lc = $("#btnLanesClear"); if(lc) lc.addEventListener("click", () => { DASH_UI.selLanes = []; renderDashboard(); });
+  const cls2 = $("#btnClearLaneSel"); if(cls2) cls2.addEventListener("click", () => { DASH_UI.selLanes = []; renderDashboard(); });
+  const batchLanes = async action => {
+    try{
+      STORE.runs.lane_controls = Array.isArray(STORE.runs.lane_controls)? STORE.runs.lane_controls : [];
+      DASH_UI.selLanes.forEach(name => STORE.runs.lane_controls.push({ id: uid("ctl"), lane: name, action, at: nowISO() }));
+      await storeSave("runs", "Lane control: " + action + " (batch)");
+      await logActivity("control", "Lane control recorded: " + action + " on " + DASH_UI.selLanes.join(", ") + " — written into runs.json for the next run.");
+      DASH_UI.lanesMsg = action === "priority"? "Priority toggled for the selected lanes — saved in runs.json." : "Restart requested — the selected lanes will re-run for the searches not covered yet.";
+      renderDashboard();
+    }catch(e){ banner("Could not save that: " + esc(e.message || String(e)), "err"); }
+  };
+  const bp = $("#btnPrioritySelected"); if(bp) bp.addEventListener("click", () => batchLanes("priority"));
+  const br = $("#btnRestartSelected"); if(br) br.addEventListener("click", () => batchLanes("restart"));
+  const tf = $("#btnTitlesFold"); if(tf) tf.addEventListener("click", () => { DASH_UI.titlesFolded = !DASH_UI.titlesFolded; renderDashboard(); });
+  const stT = $("#btnSelectTitles"); if(stT) stT.addEventListener("click", () => { DASH_UI.selectingTitles = !DASH_UI.selectingTitles; if(DASH_UI.selectingTitles) DASH_UI.titlesFolded = false; DASH_UI.titlesMsg = ""; renderDashboard(); });
+  const at = $("#btnAddTitlesToggle"); if(at) at.addEventListener("click", () => { DASH_UI.addTitlesOpen = !DASH_UI.addTitlesOpen; DASH_UI.titlesFolded = false; DASH_UI.titlesMsg = ""; renderDashboard(); });
+  const tsa = $("#btnTitlesSelectAll"); if(tsa) tsa.addEventListener("click", () => { DASH_UI.selTitles = allTitles.slice(); renderDashboard(); });
+  const tc = $("#btnTitlesClear"); if(tc) tc.addEventListener("click", () => { DASH_UI.selTitles = []; renderDashboard(); });
+  const tcs = $("#btnTitlesClearSel"); if(tcs) tcs.addEventListener("click", () => { DASH_UI.selTitles = []; renderDashboard(); });
+  const ta = $("#btnTitlesAdd"); if(ta) ta.addEventListener("click", () => titlesAddFromText($("#tkAddTitlesText").value));
+  const tca = $("#btnTitlesCancelAdd"); if(tca) tca.addEventListener("click", () => { DASH_UI.addTitlesOpen = false; DASH_UI.titlesMsg = ""; renderDashboard(); });
+  const tr2 = $("#btnTitlesRestore"); if(tr2) tr2.addEventListener("click", titlesRestore);
+  const ts2 = $("#btnTitlesScope"); if(ts2) ts2.addEventListener("click", titlesScopeRequest);
+  $$("[data-titleremove]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); titlesRemove(b.getAttribute("data-titleremove")); }));
+  $$("[data-titleselect]").forEach(b => b.addEventListener("click", () => {
+    const t = b.getAttribute("data-titleselect");
+    DASH_UI.selTitles = DASH_UI.selTitles.includes(t)? DASH_UI.selTitles.filter(x => x !== t) : [...DASH_UI.selTitles, t];
+    DASH_UI.titlesMsg = "";
+    renderDashboard();
+  }));
+  const rf2 = $("#btnRulesFold"); if(rf2) rf2.addEventListener("click", () => { DASH_UI.rulesFolded = !DASH_UI.rulesFolded; renderDashboard(); });
+  const rrt = $("#ruleRemoteToggle"); if(rrt) rrt.addEventListener("click", async () => {
+    STORE.rules.remote_only = !STORE.rules.remote_only;
+    try{ await storeSave("rules", "Toggle remote-only rule"); DASH_UI.rulesMsg = STORE.rules.remote_only? "Remote only is followed from the next run." : "Remote only is off from the next run."; }
+    catch(e){ banner("Saving the rule failed: " + esc(e.message || String(e)), "err"); }
+    renderDashboard();
+  });
+  const sr = $("#btnSaveRules"); if(sr) sr.addEventListener("click", async () => {
+    STORE.rules.minimum_pay = $("#ruleMinPay").value.trim();
+    try{ await storeSave("rules", "Update minimum pay"); toast("Rules saved to rules.json."); }
+    catch(e){ banner("Saving rules failed: " + esc(e.message || String(e)), "err"); }
+    renderDashboard();
+  });
+  const er = $("#btnEditRules"); if(er) er.addEventListener("click", () => renderWizard(9));
+  const tref = $("#btnTkRefresh"); if(tref) tref.addEventListener("click", async () => { try{ await loadAll(true); }catch(e){} renderDashboard(); });
+  const ttop = $("#btnTkTop"); if(ttop) ttop.addEventListener("click", () => {
+    const toBottom = window.scrollY < 280;
+    window.scrollTo({ top: toBottom? document.documentElement.scrollHeight : 0, behavior: "smooth" });
+  });
+  if(OPEN_LANE !== null && (saved.lanes || [])[OPEN_LANE]) openLanePanel(OPEN_LANE);
   renderFilings();
   renderCodes();
-  /* codes fetch themselves: with a live mailbox sign-in, check for new codes on every dashboard open */
   if(STORE.connections.mailbox.connected && mailTokenValid()){
-    fetchMailboxCodes({ silent:true }).then(r => { if(r && r.added) renderCodes(); }).catch(() => {});
+    fetchMailboxCodes({ silent: true }).then(r => { if(r && r.added) renderCodes(); }).catch(() => {});
     if(!CONFIRM_SCAN_DONE){
       CONFIRM_SCAN_DONE = true;
-      fetchConfirmationMatches({ silent:true }).then(r => {
+      fetchConfirmationMatches({ silent: true }).then(r => {
         if(r && r.converted){ toast(r.converted + " application" + (r.converted === 1? "" : "s") + " auto-filed from confirmation email" + (r.converted === 1? "" : "s") + "."); renderDashboard(); }
       }).catch(() => {});
     }
@@ -1626,7 +2519,29 @@ function renderDashboard(){
   renderActivity();
   renderSettings();
   startDashPoll();
+  if(DASH_TICK) clearInterval(DASH_TICK);
+  DASH_COUNT = 60;
+  DASH_TICK = setInterval(() => {
+    const cd = $("#tkCountdown");
+    if(!cd){ clearInterval(DASH_TICK); DASH_TICK = null; return; }
+    DASH_COUNT = DASH_COUNT <= 0? 60 : DASH_COUNT - 1;
+    cd.textContent = DASH_COUNT;
+    const tb = $("#btnTkTop");
+    if(tb) tb.innerHTML = window.scrollY < 280
+      ? '<svg viewBox="0 0 24 24" style="height:20px;width:20px" fill="none" aria-hidden="true"><path d="M12 4.5v15m0 0 5.8-5.8M12 19.5 6.2 13.7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>'
+      : '<svg viewBox="0 0 24 24" style="height:20px;width:20px" fill="none" aria-hidden="true"><path d="M12 19.5v-15m0 0L6.2 10.3M12 4.5l5.8 5.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+    if(DASH_COUNT % 3 === 0){
+      const inc = $("#tkIncomingTitle");
+      const list = window.__tkIncoming || [];
+      if(inc && list.length > 1){
+        DASH_UI.funnelIdx = (DASH_UI.funnelIdx + 1) % list.length;
+        inc.textContent = list[DASH_UI.funnelIdx];
+        inc.classList.remove("tk-incoming"); void inc.offsetWidth; inc.classList.add("tk-incoming");
+      }
+    }
+  }, 1000);
 }
+
 
 function laneProgress(lane){
   const runs = STORE.runs;
@@ -1635,31 +2550,7 @@ function laneProgress(lane){
   if(runs.state === "idle" && runs.history && runs.history.length) return 100;
   return 0;
 }
-function openLanePanel(idx){
-  const saved = STORE.coverage.saved || { lanes:[] };
-  const lane = (saved.lanes||[])[idx]; if(!lane) return;
-  const runs = STORE.runs;
-  const list = lane.sites.map((s,i)=>"<li>"+esc(s)+"</li>").join("");
-  $("#lanePanel").innerHTML = `
-  <div class="card mt">
-    <div class="flexbetween"><h3 style="margin:0">${esc(lane.name)}</h3>
-      <div>
-        <button class="btn ghost small" id="btnLanePriority">Toggle priority</button>
-        <button class="btn ghost small" id="btnLaneRestart">Restart this search</button>
-        <button class="btn ghost small" id="btnLaneClose">Close</button>
-      </div>
-    </div>
-    <p class="label mt">Websites in this lane (${lane.sites.length})</p>
-    <ol class="pool">${list}</ol>
-    <p class="label mt">Status</p>
-    <p class="sub">${laneProgress(lane)}% covered · run state: ${esc(runs.state)}</p>
-    ${(() => { const e = ((runs.current_run && runs.current_run.lanes) || []).find(x => x.name === lane.name); return e && e.detail? '<p class="sub">'+esc(e.detail)+'</p>' : ""; })()}
-    <div id="laneCtlMsg"></div>
-  </div>`;
-  $("#btnLaneClose").addEventListener("click", () => { $("#lanePanel").innerHTML = ""; });
-  $("#btnLanePriority").addEventListener("click", () => laneControl(lane, "priority"));
-  $("#btnLaneRestart").addEventListener("click", () => laneControl(lane, "restart"));
-}
+
 async function laneControl(lane, action){
   try{
     STORE.runs.lane_controls = Array.isArray(STORE.runs.lane_controls)? STORE.runs.lane_controls: [];
@@ -1671,10 +2562,10 @@ async function laneControl(lane, action){
 }
 async function startRun(){
   if(!(STORE.coverage.saved.titles||[]).length){ toast("Save a coverage set first — runs use your saved set only."); renderWizard(4); return; }
-  if(ENGINE_STATE === false){ toast("Install the hunt engine first — it is the worker that runs your searches."); const ec = $("#engineCard"); if(ec && ec.scrollIntoView) ec.scrollIntoView({ behavior:"smooth" }); return; }
+  if(ENGINE_STATE === false){ toast("Install the hunt engine first — it is the worker that runs your searches."); const ec = $("#tkControls"); if(ec && ec.scrollIntoView) ec.scrollIntoView({ behavior:"smooth" }); return; }
   STORE.runs.state = "running";
   STORE.runs.current_run = { id: uid("run"), started_at: nowISO(),
-    titles: clone(STORE.coverage.saved.titles), lanes: clone(STORE.coverage.saved.lanes), evaluated_extra: 0 };
+    titles: clone(tkRunTitles() || STORE.coverage.saved.titles), lanes: clone(STORE.coverage.saved.lanes), evaluated_extra: 0 };
   try{
     await storeSave("runs", "Start run");
     const repoApi = "/repos/" + encodeURIComponent(GH.owner) + "/" + encodeURIComponent(GH.repo);
@@ -1736,62 +2627,7 @@ function bindRules(){
 /* ---------- filings, parked / rejected, workaround chains ---------- */
 let FILINGS_FILTER = "";
 const WORKAROUND_CHAIN = ["Try the employer's own site for the same role", "Try an alternate route for the same posting", "Try an alternate posting of the same role"];
-function renderFilings(){
-  const box = $("#filingsBox"); if(!box) return;
-  const allRaw = STORE.filings.filings || [];
-  const all = FILINGS_FILTER? allRaw.filter(f => (f.where || "Not noted") === FILINGS_FILTER) : allRaw;
-  const filed = all.filter(f => f.status === "filed");
-  const parked = all.filter(f => f.status === "parked");
-  const rejected = all.filter(f => f.status === "rejected");
-  const detail = f => `
-    <details class="filing">
-      <summary>${esc(f.company)} — ${esc(f.role)} <span class="pill ${f.status==="filed"? "green" : f.status==="parked"? "amber":"red"}">${esc(f.status)}</span>
-      <span class="sub small">${esc(f.where||"")} · ${esc(fmtDateTime(f.filed_at))}</span></summary>
-      <div style="padding:8px 0 2px">
-        ${f.reason? '<p class="small"><b>Note:</b> '+esc(f.reason)+'</p>' : ""}
-        <p class="label">Secondary check</p>
-        ${(f.check && f.check.rules && f.check.rules.length)
-          ? '<ul class="checklist">'+f.check.rules.map(r => '<li><span class="pill '+(r.status==="pass"? "green" : r.status==="fail"? "red":"grey")+'">'+esc(r.status)+'</span><span><b>'+esc(r.rule)+'</b>'+(r.evidence? ' — <span class="muted">'+esc(r.evidence)+'</span>' : "")+'</span></li>').join("")+'</ul>'
-            + '<p class="small muted">Verdict: '+esc(f.check.verdict || "recorded")+'</p>'
-          : '<p class="sub small">No secondary-check record stored for this filing yet.</p>'}
-      </div>
-    </details>`;
-  const actionRow = (f, kind) => `
-    <div class="toggle"><div><b>${esc(f.company)}</b> — ${esc(f.role)}<div class="sub small">${esc(f.reason||"")} ${esc(f.where||"")}</div></div>
-    <span style="display:inline-flex;gap:6px">${kind === "relaunch"? '<button class="btn small" data-markfiled="' + f.id + '">Mark as filed</button>' : ""}<button class="btn ghost small" data-${kind}="${f.id}">${kind === "relaunch"? "Relaunch":"Retry"}</button></span></div>`;
-  box.innerHTML = `
-  <div class="card">
-    <div class="flexbetween"><p class="label" style="margin:0">Filed (${filed.length})</p>
-      <button class="btn ghost small" id="btnAddFiling">+ Record a filing</button></div>
-    <div id="addFilingBox"></div>
-    ${FILINGS_FILTER? '<div class="notice">Showing only filings from <b>' + esc(FILINGS_FILTER) + '</b>. <a href="#" id="btnClearSrcFilter">Show all sources</a></div>' : ""}
-    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. Submissions you make in your browser land here two ways: confirmation emails in your connected mailbox are matched to your parked leads and filed automatically, and any parked lead takes one tap on <b>Mark as filed</b>. Filed somewhere the app never found? Use + Record a filing.</p>'}
-  </div>
-  <div class="grid2">
-    <div class="card" style="margin:0"><p class="label">Parked (${parked.length})</p>
-      ${parked.length? '<p class="sub small" style="margin:0 0 6px">Confirmation emails in your connected mailbox are matched to these automatically. Submitted one with no confirmation email? Tap <b>Mark as filed</b> on it.</p>' : ""}
-      ${parked.length? parked.map(f => actionRow(f,"relaunch")).join("") : '<p class="sub">Nothing parked.</p>'}</div>
-    <div class="card" style="margin:0"><p class="label">Rejected (${rejected.length})</p>
-      ${rejected.length? rejected.map(f => actionRow(f,"retry")).join("") : '<p class="sub">Nothing rejected.</p>'}</div>
-  </div>`;
-  const cf = $("#btnClearSrcFilter"); if(cf) cf.addEventListener("click", e => { e.preventDefault(); FILINGS_FILTER = ""; renderFilings(); });
-  const add = $("#btnAddFiling");
-  if(add) add.addEventListener("click", () => {
-    $("#addFilingBox").innerHTML = `
-    <div class="grid2 mt">
-      <div><label class="f">Company</label><input type="text" id="afCompany"></div>
-      <div><label class="f">Role</label><input type="text" id="afRole"></div>
-      <div><label class="f">Where filed</label><input type="text" id="afWhere" placeholder="Board, employer site, or ATS name"></div>
-      <div><label class="f">Outcome</label><select id="afStatus"><option value="filed">Filed</option><option value="parked">Parked</option><option value="rejected">Rejected</option></select></div>
-    </div>
-    <label class="f">Note / reason</label><input type="text" id="afReason">
-    <div class="mt"><button class="btn small" id="afSave">Save filing</button></div>`;
-    $("#afSave").addEventListener("click", saveFiling);
-  });
-  $$("[data-relaunch]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-relaunch"), "relaunch")));
-  $$("[data-retry]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-retry"), "retry")));
-  $$("[data-markfiled]").forEach(b => b.addEventListener("click", () => markFilingFiled(b.getAttribute("data-markfiled"), b)));
-}
+
 async function markFilingFiled(filingId, btn){
   const f = (STORE.filings.filings||[]).find(x => x.id === filingId);
   if(!f || f.status !== "parked") return;
@@ -2290,7 +3126,7 @@ function renderSettings(){
   const sl = $("#btnSetLinkedIn"); if(sl) sl.addEventListener("click", () => renderWizard(5));
   const sm = $("#btnSetMailbox"); if(sm) sm.addEventListener("click", () => renderWizard(6));
   const sc = $("#btnSetCoverage"); if(sc) sc.addEventListener("click", () => renderWizard(4));
-  const se = $("#btnSetEngine"); if(se) se.addEventListener("click", () => { renderDashboard(); setTimeout(() => { const c = $("#engineCard"); if(c && c.scrollIntoView) c.scrollIntoView({ behavior:"smooth" }); }, 60); });
+  const se = $("#btnSetEngine"); if(se) se.addEventListener("click", () => { renderDashboard(); setTimeout(() => { const c = $("#tkControls"); if(c && c.scrollIntoView) c.scrollIntoView({ behavior:"smooth" }); }, 60); });
 }
 
 /* ---------- go ---------- */
