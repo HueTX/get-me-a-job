@@ -1284,6 +1284,23 @@ function filingsToday(){
   const t = todayStr();
   return (STORE.filings.filings||[]).filter(f => String(f.filed_at||"").slice(0,10) === t);
 }
+let DASH_POLL = null;
+function startDashPoll(){
+  if(DASH_POLL) return;
+  DASH_POLL = setInterval(async () => {
+    try{
+      if(!GH || !STORE) return;
+      const a = accountLoad(); if(a && a.signed_out) return;
+      if(!document.querySelector("#btnStartRun") && !document.querySelector("#btnStopRun")) return;
+      const ae = document.activeElement;
+      if(ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName || "")) return;
+      const lp = $("#lanePanel"); if(lp && lp.innerHTML) return;
+      const db = $("#dashDraftBox"); if(db && db.innerHTML) return;
+      await storeLoad();
+      renderDashboard();
+    }catch(e){}
+  }, 60000);
+}
 function renderDashboard(){
   headActions('<button class="btn ghost small" id="btnHeadSettings">Settings</button> <button class="btn ghost small" id="btnHeadDisc3">Sign out</button>');
   const ds = $("#btnHeadDisc3"); if(ds) ds.addEventListener("click", signOut);
@@ -1297,6 +1314,12 @@ function renderDashboard(){
   const evaluated = todays.length + ((cur && cur.evaluated_extra) || 0);
   const saved = STORE.coverage.saved || { titles:[], lanes:[] };
   const comp = completeness();
+
+  /* stale saved set: generated before the field-lane guarantee — offer a one-click repair */
+  const fieldWord = titleFieldWord(STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "");
+  const fieldStem = fieldWord? fieldWord.toLowerCase().slice(0,6) : "";
+  const hasFieldLane = !fieldStem || (saved.lanes||[]).some(l => l.kind === "sector" && l.name.toLowerCase().includes(fieldStem));
+  const staleCoverage = !!(fieldStem && (saved.titles||[]).length && !hasFieldLane);
 
   /* NOW SEARCHING pill — only while the hunt engine is genuinely live (reported within 15 min) */
   const engineFresh = !!(runs.state === "running" && cur && cur.engine_updated_at &&
@@ -1372,6 +1395,7 @@ function renderDashboard(){
 
   view().innerHTML = `
   ${comp.complete? "" : '<div class="notice warn">Your profile is '+comp.done+' of '+comp.total+' sections complete. <a href="#" id="lnkFinishProfile">Finish setup →</a></div>'}
+  ${staleCoverage? '<div class="notice warn">Your saved coverage is missing a '+esc(fieldWord)+' employers lane — it was saved by an older version of the generator. <button class="btn small" id="btnFixCoverage">Regenerate &amp; save my coverage</button></div>' : ""}
   <div class="flexbetween">
     <div>
       <h2 class="dashh">Your job hunt</h2>
@@ -1427,6 +1451,19 @@ function renderDashboard(){
   </div>
   <div id="settingsBox" class="mt"></div>`;
 
+  const fx = $("#btnFixCoverage"); if(fx) fx.addEventListener("click", async ev => {
+    const btn = ev.currentTarget; setBusy(btn, true, "Regenerating…");
+    try{
+      const t = STORE.coverage.specified_title || ((STORE.profile.detection||{}).titles||[])[0] || (saved.titles||[])[0] || "";
+      const d = await generateCoverage(t);
+      STORE.coverage.saved = { titles: clone(d.titles), lanes: clone(d.lanes), saved_at: nowISO() };
+      STORE.coverage.coverage_saved_at = STORE.coverage.saved.saved_at;
+      await storeSave("coverage", "Coverage regenerated and saved (stale-set repair)");
+      await logActivity("save", "Coverage regenerated and saved from the dashboard repair prompt: "+d.titles.length+" titles, "+d.lanes.length+" lanes.");
+      toast("Coverage fixed — your "+fieldWord+" employers lane now leads the set.");
+      renderDashboard();
+    }catch(e){ banner("Repair hit a problem: "+esc(e.message||String(e)), "err"); setBusy(btn, false); }
+  });
   const fin = $("#lnkFinishProfile"); if(fin) fin.addEventListener("click", e => { e.preventDefault(); renderVerify(); });
   const mk = $("#lnkMakeCoverage"); if(mk) mk.addEventListener("click", e => { e.preventDefault(); renderWizard(4); });
   const ec = $("#btnEditCoverage"); if(ec) ec.addEventListener("click", () => renderWizard(4));
@@ -1458,6 +1495,7 @@ function renderDashboard(){
   }
   renderActivity();
   renderSettings();
+  startDashPoll();
 }
 function laneProgress(lane){
   const runs = STORE.runs;
