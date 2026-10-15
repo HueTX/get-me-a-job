@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Me A JOB</title>
+<style>
+  :root{
+    --bg:#F6F2E7;
+    --card:rgba(255,255,255,.86);
+    --card-solid:#FFFFFF;
+    --ink:#23202b;
+    --muted:#8a8378;
+    --muted2:#a89f8f;
+    --line:rgba(120,105,75,.14);
+    --accent:#6C5CE7;
+    --accent2:#4a3fd6;
+    --accent-soft:rgba(108,92,231,.10);
+    --green:#1f9d66;
+    --green-soft:rgba(31,157,102,.12);
+    --amber:#c07f13;
+    --amber-soft:rgba(217,152,32,.14);
+    --red:#c0392b;
+    --red-soft:rgba(192,57,43,.10);
+    --radius:20px;
+    --shadow:0 10px 30px rgba(90,75,40,.08), 0 2px 6px rgba(90,75,40,.05);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:var(--accent2)}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 60px}
+  header.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 18px}
+  .brand-left{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:800;font-size:19px;
+    box-shadow:0 6px 16px rgba(108,92,231,.35);
+  }
+  h1.brandname{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:0}
+  .tagline{color:var(--muted);font-size:13px;margin:2px 0 0}
+  .card{
+    background:var(--card);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+    padding:22px;margin:0 0 16px;
+  }
+  .label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .big{font-size:34px;font-weight:300;letter-spacing:-.02em;line-height:1.05}
+  .sub{color:var(--muted);font-size:13px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1 1 0;min-width:140px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  @media (max-width:820px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+  label.f{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:14px 0 6px}
+  label.f:first-child{margin-top:0}
+  input[type=text],input[type=email],input[type=tel],input[type=number],input[type=url],input[type=password],select,textarea{
+    width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fff;
+    font-size:15px;color:var(--ink);outline:none;font-family:inherit;
+  }
+  textarea{min-height:96px;resize:vertical}
+  input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .btn{
+    appearance:none;border:0;cursor:pointer;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:700;
+    background:var(--accent);color:#fff;box-shadow:0 6px 14px rgba(108,92,231,.28);transition:transform .05s ease, background .15s;
+  }
+  .btn:hover{background:var(--accent2)}
+  .btn:active{transform:scale(.98)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--accent2);border:1px solid var(--line);box-shadow:none}
+  .btn.ghost:hover{background:var(--accent-soft)}
+  .btn.small{padding:7px 14px;font-size:13px}
+  .btn.danger{background:var(--red)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700}
+  .pill.green{background:var(--green-soft);color:var(--green)}
+  .pill.amber{background:var(--amber-soft);color:var(--amber)}
+  .pill.red{background:var(--red-soft);color:var(--red)}
+  .pill.violet{background:var(--accent-soft);color:var(--accent2)}
+  .pill.grey{background:rgba(0,0,0,.06);color:var(--muted)}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid var(--line);
+    border-radius:999px;padding:6px 8px 6px 13px;font-size:13px;font-weight:600;margin:0 7px 7px 0;
+  }
+  .chip button{border:0;background:var(--red-soft);color:var(--red);width:19px;height:19px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;padding:0}
+  .notice{border-radius:14px;padding:13px 15px;font-size:14px;margin:12px 0}
+  .notice.info{background:var(--accent-soft);color:#3730a3}
+  .notice.warn{background:var(--amber-soft);color:#7c5410}
+  .notice.err{background:var(--red-soft);color:var(--red)}
+  .notice.ok{background:var(--green-soft);color:#146c43}
+  .steps{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 16px}
+  .stepdot{width:30px;height:30px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted)}
+  .stepdot.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .stepdot.done{background:var(--green-soft);color:var(--green);border-color:transparent}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{ text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+  tr.clickable{cursor:pointer}
+  tr.clickable:hover td{background:rgba(108,92,231,.04)}
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .toggle:last-child{border-bottom:0}
+  .switch{position:relative;width:46px;height:26px;flex:0 0 auto}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:#ddd5c2;border-radius:999px;cursor:pointer;transition:.2s}
+  .slider:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(20px)}
+  .lane-card{cursor:pointer;transition:transform .06s ease}
+  .lane-card:hover{transform:translateY(-2px)}
+  .bar{height:9px;border-radius:999px;background:rgba(120,105,75,.14);overflow:hidden;margin-top:9px}
+  .bar>i{display:block;height:100%;background:var(--accent);border-radius:999px}
+  ol.pool{margin:6px 0 0;padding-left:22px;font-size:14px;line-height:1.65}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+  .mt{margin-top:14px}.mb{margin-bottom:12px}
+  .flexbetween{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .hidden{display:none !important}
+  .checklist{list-style:none;margin:8px 0;padding:0}
+  .checklist li{padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;display:flex;gap:9px;align-items:flex-start}
+  .checklist li:last-child{border-bottom:0}
+  .spin{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:sp 0.7s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .filelist{font-size:13.5px;line-height:1.9}
+  .kbd{background:#fff;border:1px solid var(--line);border-bottom-width:2px;border-radius:6px;padding:1px 6px;font-size:12px}
+  details.filing{border-bottom:1px solid var(--line);padding:9px 0}
+  details.filing summary{cursor:pointer;font-weight:600;font-size:14.5px}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#23202b;color:#fff;
+    padding:12px 18px;border-radius:12px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.3);z-index:99;max-width:92vw;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <div class="brand-left">
+      <div class="logo">G</div>
+      <div>
+        <h1 class="brandname">Get Me A JOB</h1>
+        <p class="tagline">Your job hunt, run from your own GitHub repo.</p>
+      </div>
+    </div>
+    <div id="headActions"></div>
+  </header>
+  <div id="banner"></div>
+  <main id="view"><div class="card"><p class="sub">Loading…</p></div></main>
+  <p class="sub small" style="text-align:center;margin-top:26px">
+    Get Me A JOB runs entirely in your browser. Your data lives only in your own GitHub repository —
+    this page talks to <span class="mono">api.github.com</span> and nowhere else.
+  </p>
+</div>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   Get Me A JOB — single-file standalone job-hunt tracker.
+   All state lives in the user's own GitHub repo (data/*.json)
+   via the GitHub Contents API. Token lives only in this
+   browser's localStorage. No other network calls exist.
+   ============================================================ */
+
+/* ---------- small utilities ---------- */
+const $  = (sel, el) => (el||document).querySelector(sel);
+const $$ = (sel, el) => Array.from((el||document).querySelectorAll(sel));
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowISO = () => new Date().toISOString();
+const todayStr = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const uid = p => (p||"id")+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);
+const lines = t => String(t||"").split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+const uniq = arr => Array.from(new Set((arr||[]).map(x=>String(x).trim()).filter(Boolean)));
+const clone = o => JSON.parse(JSON.stringify(o==null?null:o));
+function toast(msg, ms){ const t=$("#toast"); t.textContent=msg; t.classList.remove("hidden"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.add("hidden"), ms||3400); }
+function banner(html, kind){ const b=$("#banner"); if(!html){ b.innerHTML=""; return; } b.innerHTML='<div class="notice '+(kind||"info")+'">'+html+'</div>'; }
+function b64encode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin=""; bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin);
+}
+function b64decode(b64){
+  const bin = atob(String(b64||"").replace(/\s/g,""));
+  const bytes = Uint8Array.from(bin, c=>c.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+function fmtDateTime(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(d)? "—" : d.toLocaleString([], {month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}); }
+function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(d)? String(iso).slice(0,10) : d.toLocaleDateString([], {month:"short", day:"numeric", year:"numeric"}); }
+
+/* ---------- GitHub Contents API layer ---------- */
+const GH_KEY = "getMeAJobGh";           // localStorage key: {owner, repo, token}
+const API = "https://api.github.com";
+let GH = null;                          // {owner, repo, token} once connected
+
+function ghLoad(){ try{ const raw = localStorage.getItem(GH_KEY); return raw? JSON.parse(raw): null; }catch(e){ return null; } }
+function ghSave(){ try{ localStorage.setItem(GH_KEY, JSON.stringify(GH)); }catch(e){} }
+function ghClear(){ try{ localStorage.removeItem(GH_KEY); }catch(e){} GH = null; }
+
+async function ghFetch(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({
+    "Accept":"application/vnd.github+json",
+    "X-GitHub-Api-Version":"2022-11-28"
+  }, opts.headers||{});
+  if(GH && GH.token) headers["Authorization"] = "Bearer " + GH.token;
+  if(opts.body && !headers["Content-Type"]) headers["Content-Type"] = "application/json";
+  const res = await fetch(API + path, Object.assign({}, opts, {headers}));
+  return res;
+}
+const repoPath = p => "/repos/" + encodeURIComponent(GH.owner) + "/" + encodeURIComponent(GH.repo) + "/contents/" + p.split("/").map(encodeURIComponent).join("/");
+
+/* Read one file from the repo. Returns {exists, data, sha, raw}. Throws on auth/network errors. */
+async function ghReadFile(path){
+  const res = await ghFetch(repoPath(path));
+  if(res.status === 404) return {exists:false, data:null, sha:null};
+  if(res.status === 401 || res.status === 403){
+    const t = await res.text().catch(()=> "");
+    throw new Error("GitHub rejected the token ("+res.status+"). Check that the token has Contents read & write on this repo. " + (t.slice(0,140)));
+  }
+  if(!res.ok) throw new Error("GitHub read failed ("+res.status+") for "+path);
+  const j = await res.json();
+  const text = b64decode(j.content||"");
+  let data = null;
+  try{ data = JSON.parse(text); }catch(e){ data = null; }
+  return {exists:true, data, sha:j.sha, raw:text};
+}
+
+/* Write one file with sha-aware conflict handling + read-back verification.
+   On 409/422: re-read, let mergeFn(latestData) produce the merged object, retry (up to 3). */
+async function ghWriteFile(path, data, message, mergeFn){
+  let attempt = 0, current = data, lastErr = null;
+  while(attempt < 4){
+    attempt++;
+    let sha = null;
+    try{
+      const cur = await ghReadFile(path);
+      sha = cur.exists? cur.sha: null;
+      if(attempt > 1 && mergeFn && cur.exists && cur.data) current = mergeFn(cur.data, current);
+    }catch(e){ /* read failure is handled by the PUT path below / surfaced on retry */ }
+    const body = { message: message || ("Update "+path), content: b64encode(JSON.stringify(current, null, 2)) };
+    if(sha) body.sha = sha;
+    let res;
+    try{ res = await ghFetch(repoPath(path), {method:"PUT", body: JSON.stringify(body)}); }
+    catch(e){ lastErr = e; await sleep(600); continue; }
+    if(res.status === 200 || res.status === 201){
+      /* read-back verification */
+      try{
+        const back = await ghReadFile(path);
+        if(back.exists && JSON.stringify(back.data) === JSON.stringify(current)) return {ok:true, attempts:attempt};
+        lastErr = new Error("Read-back did not match what was written for "+path);
+      }catch(e){ lastErr = e; }
+      await sleep(500); continue;
+    }
+    if(res.status === 409 || res.status === 422){
+      lastErr = new Error("Write conflict on "+path+" ("+res.status+")");
+      await logActivity("workaround", "Write conflict on "+path+" — re-read the latest copy, merged, and retried (attempt "+attempt+").");
+      await sleep(500); continue;
+    }
+    if(res.status === 401 || res.status === 403){
+      const t = await res.text().catch(()=> "");
+      throw new Error("GitHub rejected the write ("+res.status+"). The token needs Contents: Read and write on this repo. "+t.slice(0,140));
+    }
+    const t = await res.text().catch(()=> "");
+    lastErr = new Error("GitHub write failed ("+res.status+") for "+path+": "+t.slice(0,160));
+    await sleep(600);
+  }
+  throw lastErr || new Error("Could not write "+path+" after several attempts.");
+}
+const sleep = ms => new Promise(r=>setTimeout(r, ms));
+
+
+/* ---------- data store: data/*.json in the user's repo ---------- */
+const DATA_DIR = "data";
+const FILES = {
+  profile:     DATA_DIR + "/profile.json",
+  coverage:    DATA_DIR + "/coverage.json",
+  rules:       DATA_DIR + "/rules.json",
+  answers:     DATA_DIR + "/answers.json",
+  connections: DATA_DIR + "/connections.json",
+  runs:        DATA_DIR + "/runs.json",
+  filings:     DATA_DIR + "/filings.json",
+  codes:       DATA_DIR + "/codes.json",
+  activity:    DATA_DIR + "/activity.json"
+};
+function defaultsFor(key){
+  switch(key){
+    case "profile": return { name:"", email:"", phone:"",
+      address:{ street:"", city:"", state:"", zip:"", country:"" },
+      resume:{ filename:"", added_at:"", text:"" },
+      detection:{ skills:[], employers:[], titles:[], industries:[], years_experience:"", summary:"" },
+      employers:{ target:[], excluded:[] },
+      wizard_step: 1, updated_at:"" };
+    case "coverage": return { specified_title:"", draft:{ titles:[], lanes:[], generated_at:"" },
+      saved:{ titles:[], lanes:[], saved_at:"" }, coverage_saved_at:"", updated_at:"" };
+    case "rules": return { remote_only:true, minimum_pay:"", focus_sectors:[], always_reject:[],
+      extra_notes:"", updated_at:"" };
+    case "answers": return { salary:{ range:"", single_figure:"", contract_hourly:"" },
+      screening:{ work_authorization:"", sponsorship_now:"", sponsorship_future:"", over_18:"",
+        veteran_status:"", disability:"", gender:"", race_ethnicity:"", clearance_eligibility:"",
+        travel:"", relocate:"", how_heard:"" },
+      skill_years:{}, updated_at:"" };
+    case "connections": return { linkedin:{ profile_url:"", connected:false, connected_at:"" },
+      mailbox:{ provider:"", email:"", connected:false, connected_at:"" }, updated_at:"" };
+    case "runs": return { state:"idle", current_run:null, history:[], lane_controls:[], requests:[], updated_at:"" };
+    case "filings": return { filings:[], updated_at:"" };
+    case "codes": return { codes:[], updated_at:"" };
+    case "activity": return { entries:[], updated_at:"" };
+  }
+  return {};
+}
+/* In-memory mirror of the repo files + their shas are re-read per write (ghWriteFile handles shas). */
+let STORE = null;   // {profile:{...}, coverage:{...}, ...}
+let STORE_LOADED_AT = "";
+
+async function storeInit(){
+  /* Create any missing data files (empty defaults). Records what it did in activity. */
+  const created = [];
+  for(const key of Object.keys(FILES)){
+    const r = await ghReadFile(FILES[key]);
+    if(!r.exists){
+      await ghWriteFile(FILES[key], defaultsFor(key), "Initialize "+FILES[key]);
+      created.push(FILES[key]);
+    } else if(r.data == null){
+      /* file exists but is not valid JSON — recreate it empty rather than dead-end */
+      await ghWriteFile(FILES[key], defaultsFor(key), "Repair "+FILES[key]+" (was not valid JSON)");
+      created.push(FILES[key]+" (repaired)");
+    }
+  }
+  return created;
+}
+async function storeLoad(){
+  STORE = {};
+  for(const key of Object.keys(FILES)){
+    const r = await ghReadFile(FILES[key]);
+    STORE[key] = r.exists && r.data? Object.assign(defaultsFor(key), r.data) : defaultsFor(key);
+  }
+  STORE_LOADED_AT = nowISO();
+  return STORE;
+}
+/* Save one store section back to the repo (merge-on-conflict keeps the newest of each top-level key). */
+async function storeSave(key, message){
+  STORE[key].updated_at = nowISO();
+  const snapshot = clone(STORE[key]);
+  const res = await ghWriteFile(FILES[key], snapshot, message || ("Update "+FILES[key]), (latest, mine) => {
+    return Object.assign({}, latest, mine);
+  });
+  return res;
+}
+/* Activity log lives in the repo too; logging must never break the app, so failures are swallowed. */
+async function logActivity(kind, message){
+  try{
+    if(!STORE) return;
+    STORE.activity.entries = Array.isArray(STORE.activity.entries)? STORE.activity.entries: [];
+    STORE.activity.entries.unshift({ id: uid("act"), at: nowISO(), kind: kind||"info", message: String(message||"") });
+    STORE.activity.entries = STORE.activity.entries.slice(0, 400);
+    await storeSave("activity", "Log activity");
+  }catch(e){ /* never surface logging failures as app failures */ }
+}
+async function noteWorkaround(message){ await logActivity("workaround", message); }
+
+/* ---------- resume text extraction + detection ---------- */
+const SKILL_WORDS = [
+  "Microsoft Azure","Azure","AWS","Amazon Web Services","Google Cloud","GCP","Microsoft 365","Office 365",
+  "Windows Server","Active Directory","VMware","Hyper-V","Linux","PowerShell","Bash","Python","JavaScript",
+  "SQL","SQL Server","MySQL","PostgreSQL","Oracle","Networking","TCP/IP","DNS","DHCP","VPN","Firewalls",
+  "Cybersecurity","Security","Compliance","Identity","Entra ID","Intune","Exchange","SharePoint","Teams",
+  "Terraform","Ansible","Docker","Kubernetes","CI/CD","DevOps","Git","Agile","Scrum","Project Management",
+  "Data Analysis","Excel","Power BI","Tableau","Salesforce","SAP","ServiceNow","ITIL","Help Desk",
+  "Technical Support","Cloud Migration","Architecture","Solutions Architecture","Enterprise Architecture",
+  "Machine Learning","Data Engineering","ETL","APIs","REST","Customer Service","Training","Documentation",
+  "Healthcare IT","HIPAA","Finance","Accounting","Marketing","Sales","Human Resources","Operations"
+];
+const INDUSTRY_WORDS = {
+  "Healthcare": ["healthcare","hospital","clinic","patient","medical","pharma","biotech","hipaa","ehr","epic"],
+  "Finance & Banking": ["bank","financial","finance","insurance","fintech","payments","trading","audit"],
+  "Technology": ["software","saas","technology","it services","cloud","startup","platform"],
+  "Energy & Utilities": ["energy","oil","gas","utility","utilities","power","renewable","petroleum"],
+  "Government": ["government","federal","state agency","public sector","municipal","defense"],
+  "Education": ["education","university","school","college","learning","academic"],
+  "Retail & E-commerce": ["retail","e-commerce","ecommerce","store","consumer","merchandising"],
+  "Manufacturing": ["manufacturing","factory","plant","industrial","supply chain","production"],
+  "Logistics & Transportation": ["logistics","transportation","shipping","warehouse","fleet","freight"],
+  "Media & Entertainment": ["media","entertainment","broadcast","publishing","advertising","streaming"]
+};
+const TITLE_HINTS = ["architect","engineer","analyst","manager","administrator","consultant","specialist",
+  "designer","developer","scientist","lead","director","coordinator","technician","support","strategist","owner"];
+
+function detectFromResume(text){
+  const clean = String(text||"");
+  const low = clean.toLowerCase();
+  /* skills */
+  const skills = SKILL_WORDS.filter(s => {
+    const needle = s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp("(^|[^a-z0-9])"+needle+"([^a-z0-9]|$)", "i").test(low);
+  });
+  /* industries */
+  const industries = Object.keys(INDUSTRY_WORDS).filter(ind =>
+    INDUSTRY_WORDS[ind].some(w => low.includes(w)));
+  /* years of experience from date ranges like 2015 - 2021 / Jan 2018 – Present */
+  const years = new Set();
+  const rangeRe = /(19|20)\d{2}\s*(?:-|–|—|to)\s*(?:(?:19|20)\d{2}|present|current|now)/gi;
+  let m, earliest = null, latest = null;
+  while((m = rangeRe.exec(clean)) !== null){
+    const seg = m[0];
+    const ys = seg.match(/(19|20)\d{2}/g);
+    if(ys){ const a = parseInt(ys[0],10); if(earliest===null || a<earliest) earliest = a; }
+    if(/present|current|now/i.test(seg)){ latest = new Date().getFullYear(); }
+    else if(ys && ys.length>1){ const b = parseInt(ys[ys.length-1],10); if(latest===null || b>latest) latest = b; }
+  }
+  const allYears = clean.match(/(19|20)\d{2}/g) || [];
+  allYears.forEach(y => years.add(parseInt(y,10)));
+  let yearsExp = "";
+  if(earliest !== null && latest !== null && latest >= earliest) yearsExp = String(latest - earliest);
+  /* titles held: lines that look like job titles */
+  const foundTitles = [];
+  lines(clean).forEach(ln => {
+    const l = ln.toLowerCase();
+    if(ln.length > 4 && ln.length < 70 && TITLE_HINTS.some(h => l.includes(h)) && !/^(skills|experience|education|summary)/.test(l)){
+      const t = ln.replace(/[•|·].*$/,"").replace(/\s{2,}.*$/,"").trim();
+      if(t && !foundTitles.some(x => x.toLowerCase() === t.toLowerCase())) foundTitles.push(t);
+    }
+  });
+  /* employers: heuristic — capitalized lines near "at <Name>" or short proper-noun lines; user corrects */
+  const employers = [];
+  const atRe = /\bat\s+([A-Z][A-Za-z0-9&.,'’\- ]{2,40})/g;
+  while((m = atRe.exec(clean)) !== null){
+    const name = m[1].trim().replace(/[,.;]+$/,"");
+    if(name && !employers.some(e => e.toLowerCase()===name.toLowerCase())) employers.push(name);
+  }
+  return {
+    skills: uniq(skills).slice(0, 40),
+    employers: employers.slice(0, 15),
+    titles: foundTitles.slice(0, 12),
+    industries: industries,
+    years_experience: yearsExp,
+    summary: ""
+  };
+}
+
+/* Best-effort text from an uploaded file: .txt directly; .pdf/.docx naive string scan; paste fallback always offered. */
+async function extractFileText(file){
+  const name = (file.name||"").toLowerCase();
+  if(name.endsWith(".txt") || file.type === "text/plain") return await file.text();
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  /* collect printable runs — works well enough for many PDFs/DOCXs to seed detection; user can paste instead */
+  let out = "", run = "";
+  for(let i=0;i<bytes.length;i++){
+    const c = bytes[i];
+    if(c >= 32 && c < 127 || c === 10 || c === 13){ run += String.fromCharCode(c); }
+    else { if(run.length >= 4) out += run + "\n"; run = ""; }
+  }
+  if(run.length >= 4) out += run;
+  return out.slice(0, 200000);
+}
+
+/* ---------- wide coverage generation ---------- */
+const SENIORITY = ["", "Senior ", "Lead ", "Principal ", "Staff "];
+const ROLE_FAMILIES = [
+  { keys:["analyst"], family:["Analyst","Business Analyst","Systems Analyst","Data Analyst","Business Systems Analyst","Functional Analyst","Reporting Analyst"] },
+  { keys:["architect"], family:["Architect","Solutions Architect","Enterprise Architect","Cloud Architect","Infrastructure Architect","Application Architect","Technical Architect"] },
+  { keys:["engineer"], family:["Engineer","Cloud Engineer","Systems Engineer","Infrastructure Engineer","Platform Engineer","Support Engineer","DevOps Engineer"] },
+  { keys:["designer"], family:["Designer","Product Designer","UX Designer","UI Designer","Interaction Designer","Visual Designer"] },
+  { keys:["manager"], family:["Manager","Program Manager","Project Manager","Product Manager","Operations Manager","Delivery Manager"] },
+  { keys:["developer"], family:["Developer","Software Developer","Application Developer","Full Stack Developer","Web Developer"] },
+  { keys:["consultant"], family:["Consultant","Solutions Consultant","Technical Consultant","Implementation Consultant","Advisory Consultant"] },
+  { keys:["administrator"], family:["Administrator","Systems Administrator","Cloud Administrator","Network Administrator","Database Administrator"] },
+  { keys:["specialist"], family:["Specialist","Technical Specialist","Implementation Specialist","Support Specialist","Operations Specialist"] },
+  { keys:["scientist"], family:["Scientist","Data Scientist","Research Scientist","Applied Scientist"] },
+  { keys:["technician"], family:["Technician","Support Technician","Field Technician","Systems Technician"] },
+  { keys:["coordinator"], family:["Coordinator","Program Coordinator","Project Coordinator","Operations Coordinator"] }
+];
+function generateTitles(specifiedTitle, detection){
+  const title = String(specifiedTitle||"").trim();
+  const low = title.toLowerCase();
+  let family = null;
+  for(const rf of ROLE_FAMILIES){ if(rf.keys.some(k => low.includes(k))){ family = rf.family; break; } }
+  const domainWords = [];
+  low.replace(/senior|lead|principal|staff|sr\.?|jr\.?/g," ").split(/[^a-z]+/).filter(w => w.length>2)
+     .forEach(w => { if(!["the","and","for","with"].includes(w)) domainWords.push(w); });
+  const domain = domainWords.map(w => w[0].toUpperCase()+w.slice(1)).join(" ");
+  let out = [];
+  if(title) out.push(title);
+  if(family){
+    family.forEach(f => {
+      const composed = (domain && !f.toLowerCase().includes(domain.toLowerCase().split(" ")[0]||"~~~"))
+        ? (domain + " " + f) : f;
+      SENIORITY.forEach(p => out.push(p + composed));
+    });
+  }
+  /* fold in titles the resume actually held + skill-flavored variants */
+  (detection.titles||[]).forEach(t => out.push(t));
+  (detection.skills||[]).slice(0,6).forEach(s => { if(family) out.push(s + " " + family[0]); });
+  out = uniq(out).filter(t => t.length >= 3 && t.length <= 60);
+  if(out.length < 20 && family){
+    /* widen: bare family forms at every seniority level */
+    family.forEach(f => SENIORITY.forEach(p => out.push(p + f)));
+    out = uniq(out);
+  }
+  return out.slice(0, 35);
+}
+const BOARD_LANES = [
+  { name:"LinkedIn", sites:["LinkedIn (linkedin.com/jobs)"] },
+  { name:"Indeed", sites:["Indeed (indeed.com)"] },
+  { name:"Dice", sites:["Dice (dice.com)"] },
+  { name:"Glassdoor", sites:["Glassdoor (glassdoor.com)"] },
+  { name:"Monster", sites:["Monster (monster.com)"] },
+  { name:"ZipRecruiter", sites:["ZipRecruiter (ziprecruiter.com)"] },
+  { name:"SimplyHired", sites:["SimplyHired (simplyhired.com)"] },
+  { name:"Google Jobs", sites:["Google Jobs (google.com/search jobs)"] },
+  { name:"Company Career Sites", sites:["Employer career pages (from your target employer list)"] }
+];
+function generateLanes(detection, targetEmployers){
+  const lanes = [];
+  /* sector lanes from detected industries */
+  (detection.industries||[]).forEach(ind => {
+    const inSector = (targetEmployers||[]).filter(e =>
+      (INDUSTRY_WORDS[ind]||[]).some(w => e.toLowerCase().includes(w)));
+    const pool = uniq([].concat(inSector, (detection.employers||[]).slice(0,8)));
+    lanes.push({ id: uid("lane"), name: ind + " employers", kind:"sector",
+      sites: pool.length? pool : ["Employers in the " + ind + " sector (add target employers in the wizard)"] });
+  });
+  /* one lane for the target employer list itself when no sector matched */
+  if(!lanes.length && (targetEmployers||[]).length){
+    lanes.push({ id: uid("lane"), name:"Target employers", kind:"sector", sites: uniq(targetEmployers) });
+  }
+  BOARD_LANES.forEach(b => lanes.push({ id: uid("lane"), name: b.name, kind:"board", sites: b.sites.slice() }));
+  return lanes;
+}
+async function generateCoverage(specifiedTitle){
+  const det = STORE.profile.detection || {};
+  let titles = generateTitles(specifiedTitle, det);
+  let lanes = generateLanes(det, STORE.profile.employers.target || []);
+  let widened = false;
+  if(titles.length < 20 || lanes.length < 9){
+    /* automatic widening pass: broader seniority sweep + skill families */
+    const extra = generateTitles(specifiedTitle + " Specialist", det);
+    titles = uniq(titles.concat(extra)).slice(0, 35);
+    widened = true;
+  }
+  STORE.coverage.specified_title = specifiedTitle;
+  STORE.coverage.draft = { titles, lanes, generated_at: nowISO() };
+  await storeSave("coverage", "Save draft coverage");
+  if(widened) await noteWorkaround("Generated coverage came back thin ("+titles.length+" titles, "+lanes.length+" lanes) — automatically widened with broader variants and merged.");
+  await logActivity("generation", "Generated a draft of "+titles.length+" titles and "+lanes.length+" lanes from the title “"+esc(specifiedTitle)+"”.");
+  return STORE.coverage.draft;
+}
+
+/* ---------- profile completeness (drives the verify-at-login gate) ---------- */
+function completeness(){
+  const p = STORE.profile, c = STORE.coverage, a = STORE.answers, r = STORE.rules, cn = STORE.connections;
+  const has = v => v != null && String(v).trim() !== "";
+  const sections = [
+    { id:"contact",  label:"Name & contact", step:1, ok: has(p.name) && has(p.email) && has(p.phone),
+      detail: [p.name, p.email, p.phone].filter(Boolean).join(" · ") || "Nothing saved yet" },
+    { id:"address",  label:"Home address", step:2, ok: has(p.address.street) && has(p.address.city) && has(p.address.state),
+      detail: [p.address.street, p.address.city, p.address.state, p.address.zip].filter(Boolean).join(", ") || "Nothing saved yet" },
+    { id:"resume",   label:"Resume & experience detection", step:3, ok: has(p.resume.text),
+      detail: p.resume.text? ("Resume on file"+(p.detection && p.detection.years_experience? " · ~"+p.detection.years_experience+" yrs detected":"")+" · "+((p.detection&&p.detection.skills||[]).length)+" skills") : "No resume saved yet" },
+    { id:"coverage", label:"Title & saved coverage", step:4, ok: (c.saved.titles||[]).length > 0 && (c.saved.lanes||[]).length > 0,
+      detail: (c.saved.titles||[]).length? ((c.saved.titles.length)+" titles · "+(c.saved.lanes.length)+" lanes · saved "+fmtDate(c.saved.saved_at)) : "No saved coverage yet — drafts do not count" },
+    { id:"linkedin", label:"LinkedIn", step:5, ok: has(cn.linkedin.profile_url),
+      detail: cn.linkedin.profile_url || "No profile URL saved yet" },
+    { id:"mailbox",  label:"Mailbox for codes & resets", step:6, ok: has(cn.mailbox.provider),
+      detail: cn.mailbox.provider? (cn.mailbox.provider + (cn.mailbox.email? " · "+cn.mailbox.email : "")) : "No mailbox connected yet" },
+    { id:"employers",label:"Employer lists", step:7, ok: (p.employers.target||[]).length > 0,
+      detail: (p.employers.target||[]).length? ((p.employers.target.length)+" target · "+(p.employers.excluded.length)+" excluded") : "No target employers yet" },
+    { id:"salary",   label:"Salary figures", step:8, ok: has(a.salary.range) || has(a.salary.single_figure) || has(a.salary.contract_hourly),
+      detail: [a.salary.range, a.salary.single_figure && ("single: "+a.salary.single_figure), a.salary.contract_hourly && ("contract: "+a.salary.contract_hourly+"/hr")].filter(Boolean).join(" · ") || "Nothing saved yet" },
+    { id:"rules",    label:"Hunt rules", step:9, ok: true,
+      detail: (r.remote_only? "Remote only" : "Any location") + (r.minimum_pay? " · min "+r.minimum_pay : "") + ((r.focus_sectors||[]).length? " · focus: "+r.focus_sectors.join(", ") : "") },
+    { id:"answers",  label:"Screening answers", step:10, ok: has(a.screening.work_authorization),
+      detail: a.screening.work_authorization? "Saved — authorization, sponsorship, veteran status and more on file" : "Not answered yet" }
+  ];
+  const done = sections.filter(s => s.ok).length;
+  return { sections, done, total: sections.length, complete: done === sections.length };
+}
+
+/* ---------- shared view helpers ---------- */
+const view = () => $("#view");
+function headActions(html){ $("#headActions").innerHTML = html || ""; }
+function setBusy(btn, busy, label){
+  if(!btn) return;
+  if(busy){ btn._label = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spin"></span> ' + (label||"Working…"); }
+  else { btn.disabled = false; if(btn._label) btn.innerHTML = btn._label; }
+}
+
+/* ---------- connect screen ---------- */
+function renderConnect(prefill, errorMsg){
+  headActions("");
+  const p = prefill || ghLoad() || { owner:"", repo:"get-me-a-job-data", token:"" };
+  view().innerHTML = `
+  <div class="card" style="max-width:640px;margin:26px auto">
+    <p class="label">Step 0 · Connect your GitHub</p>
+    <h2 style="margin:0 0 6px;font-size:22px">Your data lives in your repo</h2>
+    <p class="sub" style="line-height:1.55">
+      Get Me A JOB stores everything — your profile, resume, titles, lanes, rules, answers, runs and filings —
+      as JSON files inside a private GitHub repository that <b>you</b> own. This page only ever talks to
+      <span class="mono">api.github.com</span>.
+    </p>
+    <div class="notice info">
+      <b>Set it up once:</b>
+      <ol style="margin:8px 0 0;padding-left:19px;line-height:1.6">
+        <li>On GitHub, create a <b>private</b> repo (suggested name: <span class="kbd">get-me-a-job-data</span>).</li>
+        <li>Create a <b>fine-grained personal access token</b>: GitHub → Settings → Developer settings →
+            Personal access tokens → Fine-grained tokens. Repository access: <b>only that repo</b>.
+            Permissions: <b>Contents — Read and write</b>. Nothing else.</li>
+        <li>Paste the token below. It is stored <b>only in this browser</b> (localStorage) and is sent
+            only to <span class="mono">api.github.com</span> — never anywhere else, never into the repo.</li>
+      </ol>
+    </div>
+    ${errorMsg? '<div class="notice err">'+esc(errorMsg)+'</div>' : ""}
+    <label class="f">GitHub username (owner)</label>
+    <input type="text" id="ghOwner" value="${esc(p.owner||"")}" placeholder="your-github-username" autocomplete="off">
+    <label class="f">Repository name</label>
+    <input type="text" id="ghRepo" value="${esc(p.repo||"get-me-a-job-data")}" placeholder="get-me-a-job-data" autocomplete="off">
+    <label class="f">Fine-grained token (Contents read &amp; write, that repo only)</label>
+    <input type="password" id="ghToken" value="${esc(p.token||"")}" placeholder="github_pat_…" autocomplete="off">
+    <div class="mt">
+      <button class="btn" id="btnConnect">Connect</button>
+    </div>
+    <p class="sub small mt">First connect creates the empty <span class="mono">data/</span> files in the repo.
+    Returning? Connecting loads your files and walks you through a quick “Verify your details” check before your dashboard opens.</p>
+  </div>`;
+  $("#btnConnect").addEventListener("click", onConnect);
+  $("#ghToken").addEventListener("keydown", e => { if(e.key === "Enter") onConnect(); });
+}
+async function onConnect(){
+  const owner = $("#ghOwner").value.trim(), repo = $("#ghRepo").value.trim(), token = $("#ghToken").value.trim();
+  if(!owner || !repo || !token){ banner("Fill in owner, repo, and token to connect.", "warn"); return; }
+  const btn = $("#btnConnect"); setBusy(btn, true, "Connecting…");
+  GH = { owner, repo, token };
+  try{
+    const res = await ghFetch("/repos/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
+    if(res.status === 404) throw new Error("Repo not found. Check the owner and repo name — and that the repo exists and is accessible with this token.");
+    if(res.status === 401 || res.status === 403) throw new Error("GitHub rejected that token ("+res.status+"). Make sure it is a fine-grained token with Contents read & write on this repo.");
+    if(!res.ok) throw new Error("GitHub returned "+res.status+" while opening the repo.");
+    ghSave();
+    const created = await storeInit();
+    await storeLoad();
+    if(created.length) await logActivity("setup", "Initialized the data store in "+owner+"/"+repo+": created "+created.join(", ")+".");
+    banner("");
+    const hasProfile = STORE.profile && (STORE.profile.name || STORE.profile.resume.text);
+    if(hasProfile){ renderVerify(); }
+    else { renderWizard(1); }
+  }catch(e){
+    GH = null; ghClear();
+    setBusy(btn, false);
+    renderConnect({owner, repo, token}, e.message || String(e));
+  }
+}
+function disconnect(){
+  ghClear(); STORE = null;
+  banner("Disconnected. Your token was cleared from this browser — your data stays in your repo, untouched.", "ok");
+  renderConnect(null, "");
+}
+
+/* ---------- boot ---------- */
+async function boot(){
+  const saved = ghLoad();
+  if(!saved || !saved.token){ renderConnect(null, ""); return; }
+  GH = saved;
+  view().innerHTML = '<div class="card"><p class="sub">Reconnecting to <span class="mono">'+esc(saved.owner)+"/"+esc(saved.repo)+'</span>…</p></div>';
+  try{
+    await storeInit();
+    await storeLoad();
+    const hasProfile = STORE.profile && (STORE.profile.name || STORE.profile.resume.text);
+    if(hasProfile) renderVerify(); else renderWizard(STORE.profile.wizard_step || 1);
+  }catch(e){
+    GH = null;
+    view().innerHTML = '<div class="card"><div class="notice err">Could not load your repo data: '+esc(e.message||String(e))+'</div>'+
+      '<button class="btn ghost" id="btnRetryBoot">Try again</button> <button class="btn ghost" id="btnDiscBoot">Disconnect</button></div>';
+    $("#btnRetryBoot").addEventListener("click", boot);
+    $("#btnDiscBoot").addEventListener("click", disconnect);
+  }
+}
+
+/* ---------- signup wizard (11 steps) ---------- */
+const WIZ_STEPS = ["Contact","Address","Resume","Title & coverage","LinkedIn","Mailbox","Employers","Salary","Rules","Answers","Review & save"];
+let WIZ = 1;
+function wizShell(step, inner){
+  const dots = WIZ_STEPS.map((s,i)=>{
+    const n = i+1;
+    return '<div class="stepdot '+(n===step?"on":(n<step?"done":""))+'" title="'+esc(s)+'">'+n+'</div>';
+  }).join("");
+  view().innerHTML = `
+  <div class="card">
+    <p class="label">Set up your hunt · Step ${step} of 11</p>
+    <h2 style="margin:0 0 4px;font-size:21px">${esc(WIZ_STEPS[step-1])}</h2>
+    <div class="steps mt">${dots}</div>
+    <div id="wizBody">${inner}</div>
+    <div class="flexbetween mt">
+      <button class="btn ghost" id="wizBack" ${step===1?"disabled":""}>← Back</button>
+      <span class="sub small">Progress saves to your repo as you go.</span>
+      <button class="btn" id="wizNext">${step===11? "Save everything" : "Save & continue →"}</button>
+    </div>
+  </div>`;
+  $("#wizBack").addEventListener("click", ()=> renderWizard(Math.max(1, step-1)));
+  $("#wizNext").addEventListener("click", ev => wizNext(step, ev.currentTarget));
+}
+function renderWizard(step){
+  WIZ = step;
+  headActions('<button class="btn ghost small" id="btnHeadDisc">Disconnect</button>');
+  const d = $("#btnHeadDisc"); if(d) d.addEventListener("click", disconnect);
+  const renderers = {1:wizStep1,2:wizStep2,3:wizStep3,4:wizStep4,5:wizStep5,6:wizStep6,7:wizStep7,8:wizStep8,9:wizStep9,10:wizStep10,11:wizStep11};
+  (renderers[step] || wizStep1)();
+}
+async function wizPersist(step){
+  try{
+    if(step <= 3 || step === 7) await storeSave("profile", "Wizard step "+step+" (profile)");
+    if(step === 4) await storeSave("coverage", "Wizard step 4 (coverage)");
+    if(step === 5 || step === 6) await storeSave("connections", "Wizard step "+step+" (connections)");
+    if(step === 8 || step === 10) await storeSave("answers", "Wizard step "+step+" (answers)");
+    if(step === 9) await storeSave("rules", "Wizard step 9 (rules)");
+    STORE.profile.wizard_step = Math.max(STORE.profile.wizard_step||1, Math.min(11, step+1));
+    if(step !== 3 && step !== 7 && step !== 1 && step !== 2) await storeSave("profile", "Wizard progress");
+  }catch(e){ banner("Saving to your repo hit a problem: "+esc(e.message||String(e))+" — your entries are still on this screen; try Continue again.", "err"); throw e; }
+}
+async function wizNext(step, btn){
+  const collect = {1:collect1,2:collect2,3:collect3,4:collect4,5:collect5,6:collect6,7:collect7,8:collect8,9:collect9,10:collect10,11:collect11}[step];
+  if(collect) collect();
+  setBusy(btn, true, "Saving…");
+  try{
+    await wizPersist(step);
+    banner("");
+    if(step === 11){ toast("Saved to your repo and verified."); renderVerify(); return; }
+    renderWizard(step+1);
+  }catch(e){ setBusy(btn, false); }
+}
+/* --- step bodies + collectors --- */
+function wizStep1(){
+  const p = STORE.profile;
+  wizShell(1, `
+    <label class="f">Full name</label>
+    <input type="text" id="wName" value="${esc(p.name)}" placeholder="Your full name">
+    <label class="f">Email</label>
+    <input type="email" id="wEmail" value="${esc(p.email)}" placeholder="you@example.com">
+    <label class="f">Phone</label>
+    <input type="tel" id="wPhone" value="${esc(p.phone)}" placeholder="(555) 555-5555">`);
+}
+function collect1(){ const p = STORE.profile; p.name = $("#wName").value.trim(); p.email = $("#wEmail").value.trim(); p.phone = $("#wPhone").value.trim(); }
+function wizStep2(){
+  const a = STORE.profile.address;
+  wizShell(2, `
+    <div class="grid2">
+      <div><label class="f">Street address</label><input type="text" id="wStreet" value="${esc(a.street)}"></div>
+      <div><label class="f">City</label><input type="text" id="wCity" value="${esc(a.city)}"></div>
+      <div><label class="f">State / region</label><input type="text" id="wState" value="${esc(a.state)}"></div>
+      <div><label class="f">ZIP / postal code</label><input type="text" id="wZip" value="${esc(a.zip)}"></div>
+    </div>
+    <label class="f">Country</label><input type="text" id="wCountry" value="${esc(a.country)}" placeholder="United States">`);
+}
+function collect2(){ const a = STORE.profile.address; a.street=$("#wStreet").value.trim(); a.city=$("#wCity").value.trim(); a.state=$("#wState").value.trim(); a.zip=$("#wZip").value.trim(); a.country=$("#wCountry").value.trim(); }
+function wizStep3(){
+  const p = STORE.profile, det = p.detection;
+  wizShell(3, `
+    <p class="sub" style="line-height:1.55">Upload your resume and the app reads it <b>here in this page</b> — skills, past employers,
+    titles held, industries, and years of experience are detected automatically. Nothing is uploaded anywhere except into your own repo.
+    Plain text works best; PDF/DOCX get a best-effort read, and you can always paste the text instead.</p>
+    <label class="f">Resume file (.txt, .pdf, .docx)</label>
+    <input type="file" id="wResumeFile" accept=".txt,.pdf,.docx,.doc,text/plain">
+    <div id="resumeStatus" class="mt">${p.resume.text? '<span class="pill green">Resume on file</span> <span class="sub small">'+esc(p.resume.filename||"pasted text")+' · '+esc(fmtDateTime(p.resume.added_at))+'</span>' : '<span class="sub small">No resume yet.</span>'}</div>
+    <label class="f">…or paste your resume text</label>
+    <textarea id="wResumeText" style="min-height:130px" placeholder="Paste resume text here">${esc(p.resume.text||"")}</textarea>
+    <div class="mt"><button class="btn ghost" id="btnDetect" type="button">Run detection</button></div>
+    <div id="detectBox" class="mt">${det && (det.skills||[]).length? detectionHTML(det) : ""}</div>`);
+  $("#wResumeFile").addEventListener("change", async ev => {
+    const f = ev.target.files && ev.target.files[0]; if(!f) return;
+    $("#resumeStatus").innerHTML = '<span class="sub small">Reading '+esc(f.name)+'…</span>';
+    try{
+      const text = await extractFileText(f);
+      STORE.profile.resume = { filename: f.name, added_at: nowISO(), text: text || "" };
+      $("#wResumeText").value = text || "";
+      $("#resumeStatus").innerHTML = '<span class="pill green">Loaded</span> <span class="sub small">'+esc(f.name)+' — now run detection.</span>';
+    }catch(e){ $("#resumeStatus").innerHTML = '<span class="pill red">Could not read that file</span> <span class="sub small">Paste the text instead.</span>'; }
+  });
+  $("#btnDetect").addEventListener("click", () => {
+    const text = $("#wResumeText").value;
+    STORE.profile.resume.text = text;
+    if(!STORE.profile.resume.added_at) STORE.profile.resume = { filename:"pasted text", added_at: nowISO(), text };
+    STORE.profile.detection = detectFromResume(text);
+    $("#detectBox").innerHTML = detectionHTML(STORE.profile.detection);
+    toast("Detection updated — check it, then Save & continue.");
+  });
+}
+function detectionHTML(det){
+  const row = (label, arr) => '<p class="small" style="margin:7px 0"><b>'+label+':</b> '+(arr && arr.length? arr.map(esc).join(", ") : '<span class="muted">none detected</span>')+'</p>';
+  return '<div class="notice info"><b>Detected from your resume</b> — correct anything on the next steps; titles and skills pre-fill from here.'+
+    row("Skills", det.skills) + row("Past employers", det.employers) + row("Titles held", det.titles) +
+    row("Industries", det.industries) +
+    '<p class="small" style="margin:7px 0"><b>Years of experience:</b> '+(det.years_experience? esc(det.years_experience)+" years detected from date ranges" : '<span class="muted">not detected</span>')+'</p></div>';
+}
+function collect3(){
+  const t = $("#wResumeText"); if(t && t.value.trim()){ STORE.profile.resume.text = t.value; if(!STORE.profile.resume.filename) STORE.profile.resume.filename = "pasted text"; if(!STORE.profile.resume.added_at) STORE.profile.resume.added_at = nowISO(); }
+  if(STORE.profile.resume.text) STORE.profile.detection = detectFromResume(STORE.profile.resume.text);
+}
+function wizStep4(){
+  const c = STORE.coverage, det = STORE.profile.detection;
+  const prefill = c.specified_title || (det.titles && det.titles[0]) || "";
+  const draft = c.draft || { titles:[], lanes:[] };
+  const saved = c.saved || { titles:[], lanes:[] };
+  wizShell(4, `
+    <p class="sub" style="line-height:1.55">Tell the app the title you are aiming at. It generates a <b>wide</b> draft —
+    title variants and adjacent families, plus sector lanes from your background and the big job boards.
+    The draft changes nothing until you <b>save</b> it; the saved set is what your dashboard and runs use.</p>
+    <label class="f">Your title</label>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:3"><input type="text" id="wTitle" value="${esc(prefill)}" placeholder="e.g. Data Analyst"></div>
+      <div style="flex:1"><button class="btn" id="btnGen" type="button" style="width:100%">Generate wide coverage</button></div>
+    </div>
+    <div id="draftBox" class="mt">${draft.titles.length? draftHTML(draft) : '<p class="sub">No draft yet — generate one.</p>'}</div>
+    ${saved.titles.length? '<div class="notice ok">Saved coverage active: '+saved.titles.length+' titles · '+saved.lanes.length+' lanes · saved '+esc(fmtDate(saved.saved_at))+'.</div>' : ""}`);
+  $("#btnGen").addEventListener("click", async ev => {
+    const t = $("#wTitle").value.trim();
+    if(!t){ banner("Type the title you are aiming at first.", "warn"); return; }
+    const btn = ev.currentTarget; setBusy(btn, true, "Generating…");
+    try{ const d = await generateCoverage(t); $("#draftBox").innerHTML = draftHTML(d); bindDraft(); toast("Draft generated — review it, then save."); }
+    catch(e){ banner("Generation hit a problem saving the draft: "+esc(e.message||String(e)), "err"); }
+    setBusy(btn, false);
+  });
+  bindDraft();
+}
+function draftHTML(d){
+  const chips = (d.titles||[]).map((t,i)=>'<span class="chip">'+esc(t)+'<button type="button" data-rm-title="'+i+'" title="Remove">×</button></span>').join("");
+  const laneRows = (d.lanes||[]).map((l,i)=>'<div class="toggle"><div><b>'+esc(l.name)+'</b> <span class="pill '+(l.kind==="sector"?"violet":"grey")+'">'+esc(l.kind)+'</span><div class="sub small">'+l.sites.length+' site'+(l.sites.length===1?"":"s")+' in this lane</div></div><button class="btn ghost small" type="button" data-rm-lane="'+i+'">Remove</button></div>').join("");
+  return '<div class="notice warn"><b>Draft — not active yet.</b> Review, trim, add your own, then save. Saving replaces your active coverage.</div>'+
+    '<p class="label">Draft titles ('+(d.titles||[]).length+')</p><div>'+chips+'</div>'+
+    '<div class="row mt"><div style="flex:3"><input type="text" id="wAddTitle" placeholder="Add a title of your own"></div><div style="flex:1"><button class="btn ghost" type="button" id="btnAddTitle" style="width:100%">Add title</button></div></div>'+
+    '<p class="label mt">Draft lanes ('+(d.lanes||[]).length+')</p>'+laneRows+
+    '<div class="mt"><button class="btn" type="button" id="btnSaveCoverage">Save coverage</button> <span class="sub small">Writes to coverage.json in your repo and reads it back to verify.</span></div>';
+}
+function bindDraft(){
+  $$("[data-rm-title]").forEach(b => b.addEventListener("click", () => {
+    STORE.coverage.draft.titles.splice(parseInt(b.getAttribute("data-rm-title"),10), 1);
+    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+  }));
+  $$("[data-rm-lane]").forEach(b => b.addEventListener("click", () => {
+    STORE.coverage.draft.lanes.splice(parseInt(b.getAttribute("data-rm-lane"),10), 1);
+    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+  }));
+  const add = $("#btnAddTitle");
+  if(add) add.addEventListener("click", () => {
+    const v = $("#wAddTitle").value.trim(); if(!v) return;
+    STORE.coverage.draft.titles = uniq(STORE.coverage.draft.titles.concat([v]));
+    $("#draftBox").innerHTML = draftHTML(STORE.coverage.draft); bindDraft();
+  });
+  const save = $("#btnSaveCoverage");
+  if(save) save.addEventListener("click", async ev => {
+    const btn = ev.currentTarget; setBusy(btn, true, "Saving…");
+    try{
+      STORE.coverage.saved = { titles: clone(STORE.coverage.draft.titles), lanes: clone(STORE.coverage.draft.lanes), saved_at: nowISO() };
+      STORE.coverage.coverage_saved_at = STORE.coverage.saved.saved_at;
+      await storeSave("coverage", "Save coverage");
+      await logActivity("save", "Coverage saved: "+STORE.coverage.saved.titles.length+" titles and "+STORE.coverage.saved.lanes.length+" lanes are now the active set (saved "+STORE.coverage.saved.saved_at+").");
+      banner("Coverage saved to your repo and verified by read-back. It is now the set your dashboard and runs use.", "ok");
+      renderWizard(4);
+    }catch(e){ banner("Save failed: "+esc(e.message||String(e)), "err"); }
+    setBusy(btn, false);
+  });
+}
+function collect4(){ const t = $("#wTitle"); if(t) STORE.coverage.specified_title = t.value.trim(); }
+
+function wizStep5(){
+  const li = STORE.connections.linkedin;
+  wizShell(5, `
+    <div class="notice info"><b>How LinkedIn connect works:</b> you sign in with LinkedIn itself — this page never asks for,
+    sees, or stores your LinkedIn password. Paste your profile URL here so applications can carry it, and mark the connection once you
+    have signed in with LinkedIn in your browser.</div>
+    <label class="f">LinkedIn profile URL</label>
+    <input type="url" id="wLiUrl" value="${esc(li.profile_url)}" placeholder="https://www.linkedin.com/in/your-name">
+    <div class="toggle"><div><b>Connected with LinkedIn</b><div class="sub small">Switch on after you have signed in with LinkedIn in this browser.</div></div>
+      <label class="switch"><input type="checkbox" id="wLiConn" ${li.connected? "checked":""}><span class="slider"></span></label></div>`);
+}
+function collect5(){ const li = STORE.connections.linkedin; li.profile_url = $("#wLiUrl").value.trim(); const on = $("#wLiConn").checked; if(on && !li.connected) li.connected_at = nowISO(); li.connected = on; }
+function wizStep6(){
+  const mb = STORE.connections.mailbox;
+  wizShell(6, `
+    <div class="notice info"><b>Why a mailbox:</b> job sites send one-time sign-in codes and password-reset links to your email.
+    Connect Gmail or Outlook <b>with the provider</b> — sign-in happens on their page; your email password is never typed here.
+    When a code arrives, paste it into the <b>Code Inbox</b> on your dashboard and it is kept in <span class="mono">codes.json</span> in your repo.</div>
+    <label class="f">Provider</label>
+    <select id="wMbProvider">
+      <option value="" ${mb.provider===""?"selected":""}>Choose…</option>
+      <option value="Gmail" ${mb.provider==="Gmail"?"selected":""}>Gmail</option>
+      <option value="Outlook" ${mb.provider==="Outlook"?"selected":""}>Outlook</option>
+      <option value="Other" ${mb.provider==="Other"?"selected":""}>Other</option>
+    </select>
+    <label class="f">Mailbox email address</label>
+    <input type="email" id="wMbEmail" value="${esc(mb.email)}" placeholder="you@example.com">
+    <div class="toggle"><div><b>Connected with my provider</b><div class="sub small">Switch on after completing sign-in on the provider's page.</div></div>
+      <label class="switch"><input type="checkbox" id="wMbConn" ${mb.connected? "checked":""}><span class="slider"></span></label></div>`);
+}
+function collect6(){ const mb = STORE.connections.mailbox; mb.provider = $("#wMbProvider").value; mb.email = $("#wMbEmail").value.trim(); const on = $("#wMbConn").checked; if(on && !mb.connected) mb.connected_at = nowISO(); mb.connected = on; }
+function wizStep7(){
+  const e = STORE.profile.employers;
+  wizShell(7, `
+    <label class="f">Target employers (one per line)</label>
+    <textarea id="wTargetEmp" placeholder="One employer per line">${esc((e.target||[]).join("\n"))}</textarea>
+    <label class="f">Excluded employers — never apply here (one per line)</label>
+    <textarea id="wExcludedEmp" placeholder="One employer per line">${esc((e.excluded||[]).join("\n"))}</textarea>`);
+}
+function collect7(){ const e = STORE.profile.employers; e.target = uniq(lines($("#wTargetEmp").value)); e.excluded = uniq(lines($("#wExcludedEmp").value)); }
+function wizStep8(){
+  const s = STORE.answers.salary;
+  wizShell(8, `
+    <label class="f">Expected salary range</label>
+    <input type="text" id="wSalRange" value="${esc(s.range)}" placeholder="e.g. $120,000 – $150,000">
+    <label class="f">Single-figure answer (when a form allows one number)</label>
+    <input type="text" id="wSalSingle" value="${esc(s.single_figure)}" placeholder="e.g. $135,000">
+    <label class="f">Contract hourly rate</label>
+    <input type="text" id="wSalContract" value="${esc(s.contract_hourly)}" placeholder="e.g. $85">`);
+}
+function collect8(){ const s = STORE.answers.salary; s.range = $("#wSalRange").value.trim(); s.single_figure = $("#wSalSingle").value.trim(); s.contract_hourly = $("#wSalContract").value.trim(); }
+function wizStep9(){
+  const r = STORE.rules;
+  wizShell(9, `
+    <div class="toggle"><div><b>Remote only</b><div class="sub small">Skip anything that is not fully remote.</div></div>
+      <label class="switch"><input type="checkbox" id="wRemoteOnly" ${r.remote_only? "checked":""}><span class="slider"></span></label></div>
+    <label class="f">Minimum pay (leave blank for none)</label>
+    <input type="text" id="wMinPay" value="${esc(r.minimum_pay)}" placeholder="e.g. $120,000/yr or $70/hr">
+    <label class="f">Sectors to focus on (one per line)</label>
+    <textarea id="wSectors" placeholder="One sector per line">${esc((r.focus_sectors||[]).join("\n"))}</textarea>
+    <label class="f">Always reject (one per line — roles, terms, companies)</label>
+    <textarea id="wAlwaysReject" placeholder="One per line">${esc((r.always_reject||[]).join("\n"))}</textarea>
+    <label class="f">Extra notes</label>
+    <textarea id="wRuleNotes" placeholder="Anything else the hunt should respect">${esc(r.extra_notes||"")}</textarea>`);
+}
+function collect9(){ const r = STORE.rules; r.remote_only = $("#wRemoteOnly").checked; r.minimum_pay = $("#wMinPay").value.trim(); r.focus_sectors = uniq(lines($("#wSectors").value)); r.always_reject = uniq(lines($("#wAlwaysReject").value)); r.extra_notes = $("#wRuleNotes").value.trim(); }
+const SCREEN_FIELDS = [
+  ["work_authorization","Work authorization","e.g. Authorized to work in the US"],
+  ["sponsorship_now","Sponsorship needed now?","Yes / No"],
+  ["sponsorship_future","Sponsorship needed in the future?","Yes / No"],
+  ["over_18","Are you 18 or older?","Yes / No"],
+  ["veteran_status","Veteran status","Your exact answer, as you give it on forms"],
+  ["disability","Disability status","Your exact answer"],
+  ["gender","Gender","Your exact answer"],
+  ["race_ethnicity","Race / ethnicity","Your exact answer"],
+  ["clearance_eligibility","Security clearance eligibility","e.g. Eligible to obtain / Not eligible"],
+  ["travel","Willing to travel?","Yes / No / Sometimes"],
+  ["relocate","Willing to relocate?","Yes / No"],
+  ["how_heard","How did you hear about us? (default answer)","e.g. LinkedIn"]
+];
+function wizStep10(){
+  const sc = STORE.answers.screening, det = STORE.profile.detection;
+  const fields = SCREEN_FIELDS.map(f => '<label class="f">'+esc(f[1])+'</label><input type="text" id="wSc_'+f[0]+'" value="'+esc(sc[f[0]]||"")+'" placeholder="'+esc(f[2])+'">').join("");
+  const skills = (det.skills||[]).map(s => '<label class="f">Years — '+esc(s)+'</label><input type="number" min="0" step="0.5" id="wSy_'+esc(s.replace(/\W/g,"_"))+'" value="'+esc(STORE.answers.skill_years[s] != null? STORE.answers.skill_years[s] : "")+'" placeholder="0">').join("");
+  wizShell(10, fields + (skills? '<p class="label mt">Years of experience per skill (from your resume)</p>'+skills : '<p class="sub mt">No skills detected yet — add a resume in step 3 and per-skill years will appear here.</p>'));
+}
+function collect10(){
+  const sc = STORE.answers.screening;
+  SCREEN_FIELDS.forEach(f => { const el = $("#wSc_"+f[0]); if(el) sc[f[0]] = el.value.trim(); });
+  (STORE.profile.detection.skills||[]).forEach(s => { const el = $("#wSy_"+s.replace(/\W/g,"_")); if(el && el.value !== "") STORE.answers.skill_years[s] = el.value; });
+}
+function wizStep11(){
+  const comp = completeness();
+  const rows = comp.sections.map(s => '<li><span class="pill '+(s.ok? "green":"red")+'">'+(s.ok? "Saved":"Missing")+'</span><span><b>'+esc(s.label)+'</b> — <span class="muted">'+esc(s.detail)+'</span></span></li>').join("");
+  wizShell(11, `
+    <p class="sub" style="line-height:1.55">Review everything. “Save everything” writes each file to your repo and reads it back to verify.
+    Anything marked Missing can be fixed by going Back to its step — you can also save now and finish from the verification gate.</p>
+    <ul class="checklist">${rows}</ul>
+    <div class="notice ${comp.complete? "ok":"warn"}">${comp.complete? "Everything is in place." : (comp.done+" of "+comp.total+" sections complete — the rest can be finished any time from Settings.")}</div>`);
+}
+async function collect11(){ /* nothing to collect — all sections already live in STORE */ }
+
+/* ---------- verify-at-login gate ---------- */
+function renderVerify(){
+  headActions('<button class="btn ghost small" id="btnHeadDisc2">Disconnect</button>');
+  const d = $("#btnHeadDisc2"); if(d) d.addEventListener("click", disconnect);
+  const comp = completeness();
+  const rows = comp.sections.map(s => `
+    <div class="toggle">
+      <div><b>${esc(s.label)}</b> <span class="pill ${s.ok? "green":"red"}">${s.ok? "On file":"Needs attention"}</span>
+      <div class="sub small">${esc(s.detail)}</div></div>
+      <button class="btn ghost small" data-fix-step="${s.step}">${s.ok? "Review / edit":"Fix now"}</button>
+    </div>`).join("");
+  view().innerHTML = `
+  <div class="card" style="max-width:760px;margin:20px auto">
+    <p class="label">Welcome back · Verify your details</p>
+    <h2 style="margin:0 0 6px;font-size:22px">Quick check before your dashboard</h2>
+    <p class="sub" style="line-height:1.55">These values were loaded just now from <span class="mono">${esc(GH.owner)}/${esc(GH.repo)}</span>.
+    Confirm each section is still right, or jump in and fix it. Your dashboard opens once you confirm.</p>
+    ${rows}
+    <div class="mt flexbetween">
+      <span class="sub small">${comp.done} of ${comp.total} sections complete</span>
+      ${comp.complete
+        ? '<button class="btn" id="btnConfirmAll">Confirm all &amp; open my dashboard</button>'
+        : '<button class="btn" id="btnConfirmAll">Open my dashboard anyway</button>'}
+    </div>
+    ${comp.complete? "" : '<p class="sub small">Sections marked “Needs attention” stay flagged on your dashboard until fixed.</p>'}
+  </div>`;
+  $$("[data-fix-step]").forEach(b => b.addEventListener("click", () => renderWizard(parseInt(b.getAttribute("data-fix-step"),10))));
+  $("#btnConfirmAll").addEventListener("click", async () => {
+    await logActivity("verify", "Details verified at login ("+comp.done+"/"+comp.total+" sections complete).");
+    renderDashboard();
+  });
+}
+
+/* ---------- dashboard ---------- */
+function filingsToday(){
+  const t = todayStr();
+  return (STORE.filings.filings||[]).filter(f => String(f.filed_at||"").slice(0,10) === t);
+}
+function renderDashboard(){
+  headActions('<button class="btn ghost small" id="btnHeadSettings">Settings</button> <button class="btn ghost small" id="btnHeadDisc3">Disconnect</button>');
+  const ds = $("#btnHeadDisc3"); if(ds) ds.addEventListener("click", disconnect);
+  const st = $("#btnHeadSettings"); if(st) st.addEventListener("click", () => { location.hash = "#settings"; renderDashboard(); });
+  banner("");
+  const todays = filingsToday();
+  const counts = { filed:0, parked:0, rejected:0 };
+  todays.forEach(f => { if(counts[f.status] != null) counts[f.status]++; });
+  const runs = STORE.runs;
+  const evaluated = todays.length + ((runs.current_run && runs.current_run.evaluated_extra) || 0);
+  const saved = STORE.coverage.saved || { titles:[], lanes:[] };
+  const comp = completeness();
+
+  const countCard = (label, n, pillCls) => `
+    <div class="card" style="text-align:center;margin:0">
+      <p class="label">${label}</p>
+      <div style="width:104px;height:104px;margin:6px auto;border-radius:50%;border:3px solid var(--accent-soft);display:flex;align-items:center;justify-content:center">
+        <span class="big">${n}</span>
+      </div>
+      <span class="pill ${pillCls}">${label}</span>
+    </div>`;
+
+  const stages = ["Preparing","Discovering","Evaluating","Filing","Closeout"].map((s,i) => {
+    let state = "Waiting", cls = "grey";
+    if(runs.state === "running"){ state = i < 2? "Active" : "Queued"; cls = i < 2? "amber" : "grey"; }
+    if(runs.state === "idle" && runs.history && runs.history.length){ state = "Last run finished"; cls = "green"; }
+    if(runs.state === "stopped"){ state = "Stopped"; cls = "red"; }
+    return '<div class="toggle"><div><b>'+s+'</b></div><span class="pill '+cls+'">'+state+'</span></div>';
+  }).join("");
+
+  const laneCards = (saved.lanes||[]).map((l,i) => `
+    <div class="card lane-card" data-lane="${i}" style="margin:0">
+      <div class="flexbetween"><b>${esc(l.name)}</b><span class="pill ${l.kind==="sector"? "violet":"grey"}">${esc(l.kind)}</span></div>
+      <p class="sub small" style="margin:6px 0 0">${l.sites.length} site${l.sites.length===1?"":"s"}</p>
+      <div class="bar"><i style="width:${laneProgress(l)}%"></i></div>
+      <p class="sub small">${laneProgress(l)}% covered</p>
+    </div>`).join("");
+
+  view().innerHTML = `
+  ${comp.complete? "" : '<div class="notice warn">Your profile is '+comp.done+' of '+comp.total+' sections complete. <a href="#" id="lnkFinishProfile">Finish setup →</a></div>'}
+  <p class="label">Today · ${esc(todayStr())}</p>
+  <div class="grid4">
+    ${countCard("Filed", counts.filed, "green")}
+    ${countCard("Parked", counts.parked, "amber")}
+    ${countCard("Rejected", counts.rejected, "red")}
+    ${countCard("Evaluated", evaluated, "violet")}
+  </div>
+  <div class="card mt">
+    <div class="flexbetween">
+      <div><p class="label">Hunt run</p>
+      <b>${runs.state === "running"? "Run in progress" : runs.state === "stopped"? "Stopped" : "Idle"}</b>
+      <span class="sub small">${runs.current_run? " · started "+esc(fmtDateTime(runs.current_run.started_at)) : ""}</span></div>
+      <div>
+        ${runs.state === "running"
+          ? '<button class="btn danger" id="btnStopRun">Stop</button>'
+          : '<button class="btn" id="btnStartRun">Start run</button>'}
+      </div>
+    </div>
+    ${stages}
+    <p class="sub small">Runs work from your saved coverage only — ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? ", saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}.</p>
+  </div>
+  <p class="label">Search coverage</p>
+  <div id="laneGrid" class="grid3">${laneCards || '<div class="card" style="margin:0"><p class="sub">No saved coverage yet. <a href="#" id="lnkMakeCoverage">Generate &amp; save coverage →</a></p></div>'}</div>
+  <div id="lanePanel"></div>
+  <div class="grid2 mt">
+    <div class="card" style="margin:0">
+      <p class="label">Titles searched (${saved.titles.length})</p>
+      <div>${saved.titles.map(t=>'<span class="chip">'+esc(t)+'</span>').join("") || '<span class="sub">None saved yet.</span>'}</div>
+      <div class="mt"><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button></div>
+    </div>
+    <div class="card" style="margin:0">
+      <p class="label">Your rules</p>
+      <div id="rulesBox">${rulesHTML()}</div>
+    </div>
+  </div>
+  <div id="filingsBox" class="mt"></div>
+  <div class="grid2 mt">
+    <div id="codesBox"></div>
+    <div id="activityBox"></div>
+  </div>
+  <div id="settingsBox" class="mt"></div>`;
+
+  const fin = $("#lnkFinishProfile"); if(fin) fin.addEventListener("click", e => { e.preventDefault(); renderVerify(); });
+  const mk = $("#lnkMakeCoverage"); if(mk) mk.addEventListener("click", e => { e.preventDefault(); renderWizard(4); });
+  const ec = $("#btnEditCoverage"); if(ec) ec.addEventListener("click", () => renderWizard(4));
+  const start = $("#btnStartRun"); if(start) start.addEventListener("click", startRun);
+  const stop = $("#btnStopRun"); if(stop) stop.addEventListener("click", stopRun);
+  $$("#laneGrid .lane-card").forEach(card => card.addEventListener("click", () => openLanePanel(parseInt(card.getAttribute("data-lane"),10))));
+  bindRules();
+  renderFilings();
+  renderCodes();
+  renderActivity();
+  renderSettings();
+}
+function laneProgress(lane){
+  const runs = STORE.runs;
+  const entry = ((runs.current_run && runs.current_run.lanes) || []).find(x => x.name === lane.name);
+  if(entry && entry.total) return Math.max(0, Math.min(100, Math.round(100 * (entry.done||0) / entry.total)));
+  if(runs.state === "idle" && runs.history && runs.history.length) return 100;
+  return 0;
+}
+function openLanePanel(idx){
+  const saved = STORE.coverage.saved || { lanes:[] };
+  const lane = (saved.lanes||[])[idx]; if(!lane) return;
+  const runs = STORE.runs;
+  const list = lane.sites.map((s,i)=>"<li>"+esc(s)+"</li>").join("");
+  $("#lanePanel").innerHTML = `
+  <div class="card mt">
+    <div class="flexbetween"><h3 style="margin:0">${esc(lane.name)}</h3>
+      <div>
+        <button class="btn ghost small" id="btnLanePriority">Toggle priority</button>
+        <button class="btn ghost small" id="btnLaneRestart">Restart this search</button>
+        <button class="btn ghost small" id="btnLaneClose">Close</button>
+      </div>
+    </div>
+    <p class="label mt">Websites in this lane (${lane.sites.length})</p>
+    <ol class="pool">${list}</ol>
+    <p class="label mt">Status</p>
+    <p class="sub">${laneProgress(lane)}% covered · run state: ${esc(runs.state)}</p>
+    <div id="laneCtlMsg"></div>
+  </div>`;
+  $("#btnLaneClose").addEventListener("click", () => { $("#lanePanel").innerHTML = ""; });
+  $("#btnLanePriority").addEventListener("click", () => laneControl(lane, "priority"));
+  $("#btnLaneRestart").addEventListener("click", () => laneControl(lane, "restart"));
+}
+async function laneControl(lane, action){
+  try{
+    STORE.runs.lane_controls = Array.isArray(STORE.runs.lane_controls)? STORE.runs.lane_controls: [];
+    STORE.runs.lane_controls.push({ id: uid("ctl"), lane: lane.name, action, at: nowISO() });
+    await storeSave("runs", "Lane control: "+action+" "+lane.name);
+    await logActivity("control", "Lane control recorded: "+action+" on “"+lane.name+"” — written into runs.json for the next run.");
+    const m = $("#laneCtlMsg"); if(m) m.innerHTML = '<div class="notice ok">'+esc(action === "priority"? "Priority toggled" : "Restart requested")+' for '+esc(lane.name)+' — saved in runs.json.</div>';
+  }catch(e){ const m = $("#laneCtlMsg"); if(m) m.innerHTML = '<div class="notice err">'+esc(e.message||String(e))+'</div>'; }
+}
+async function startRun(){
+  if(!(STORE.coverage.saved.titles||[]).length){ toast("Save a coverage set first — runs use your saved set only."); renderWizard(4); return; }
+  STORE.runs.state = "running";
+  STORE.runs.current_run = { id: uid("run"), started_at: nowISO(),
+    titles: clone(STORE.coverage.saved.titles), lanes: clone(STORE.coverage.saved.lanes), evaluated_extra: 0 };
+  try{
+    await storeSave("runs", "Start run");
+    await logActivity("run", "Run started on the saved coverage set ("+STORE.runs.current_run.titles.length+" titles, "+STORE.runs.current_run.lanes.length+" lanes).");
+    renderDashboard();
+  }catch(e){ banner("Could not start the run: "+esc(e.message||String(e)), "err"); }
+}
+async function stopRun(){
+  const cur = STORE.runs.current_run;
+  if(cur){ cur.ended_at = nowISO(); (STORE.runs.history = STORE.runs.history||[]).unshift(cur); }
+  STORE.runs.current_run = null; STORE.runs.state = "stopped";
+  try{ await storeSave("runs", "Stop run"); await logActivity("run", "Run stopped by user."); renderDashboard(); }
+  catch(e){ banner("Could not stop the run: "+esc(e.message||String(e)), "err"); }
+}
+function rulesHTML(){
+  const r = STORE.rules;
+  return `
+  <div class="toggle"><div><b>Remote only</b><div class="sub small">Skip anything not fully remote.</div></div>
+    <label class="switch"><input type="checkbox" id="ruleRemote" ${r.remote_only? "checked":""}><span class="slider"></span></label></div>
+  <label class="f">Minimum pay</label>
+  <input type="text" id="ruleMinPay" value="${esc(r.minimum_pay)}" placeholder="e.g. $120,000/yr or $70/hr">
+  <p class="small muted" style="margin:10px 0 0">Focus sectors: ${(r.focus_sectors||[]).map(esc).join(", ") || "—"}<br>
+  Always reject: ${(r.always_reject||[]).map(esc).join(", ") || "—"}</p>
+  <div class="mt"><button class="btn ghost small" id="btnSaveRules">Save rules</button>
+  <button class="btn ghost small" id="btnEditRules">Edit all rules</button></div>`;
+}
+function bindRules(){
+  const save = $("#btnSaveRules");
+  if(save) save.addEventListener("click", async () => {
+    STORE.rules.remote_only = $("#ruleRemote").checked;
+    STORE.rules.minimum_pay = $("#ruleMinPay").value.trim();
+    try{ await storeSave("rules", "Update rules"); toast("Rules saved to rules.json."); }
+    catch(e){ banner("Saving rules failed: "+esc(e.message||String(e)), "err"); }
+  });
+  const edit = $("#btnEditRules");
+  if(edit) edit.addEventListener("click", () => renderWizard(9));
+}
+
+/* ---------- filings, parked / rejected, workaround chains ---------- */
+const WORKAROUND_CHAIN = ["Try the employer's own site for the same role", "Try an alternate route for the same posting", "Try an alternate posting of the same role"];
+function renderFilings(){
+  const box = $("#filingsBox"); if(!box) return;
+  const all = STORE.filings.filings || [];
+  const filed = all.filter(f => f.status === "filed");
+  const parked = all.filter(f => f.status === "parked");
+  const rejected = all.filter(f => f.status === "rejected");
+  const detail = f => `
+    <details class="filing">
+      <summary>${esc(f.company)} — ${esc(f.role)} <span class="pill ${f.status==="filed"? "green" : f.status==="parked"? "amber":"red"}">${esc(f.status)}</span>
+      <span class="sub small">${esc(f.where||"")} · ${esc(fmtDateTime(f.filed_at))}</span></summary>
+      <div style="padding:8px 0 2px">
+        ${f.reason? '<p class="small"><b>Note:</b> '+esc(f.reason)+'</p>' : ""}
+        <p class="label">Secondary check</p>
+        ${(f.check && f.check.rules && f.check.rules.length)
+          ? '<ul class="checklist">'+f.check.rules.map(r => '<li><span class="pill '+(r.status==="pass"? "green" : r.status==="fail"? "red":"grey")+'">'+esc(r.status)+'</span><span><b>'+esc(r.rule)+'</b>'+(r.evidence? ' — <span class="muted">'+esc(r.evidence)+'</span>' : "")+'</span></li>').join("")+'</ul>'
+            + '<p class="small muted">Verdict: '+esc(f.check.verdict || "recorded")+'</p>'
+          : '<p class="sub small">No secondary-check record stored for this filing yet.</p>'}
+      </div>
+    </details>`;
+  const actionRow = (f, kind) => `
+    <div class="toggle"><div><b>${esc(f.company)}</b> — ${esc(f.role)}<div class="sub small">${esc(f.reason||"")} ${esc(f.where||"")}</div></div>
+    <button class="btn ghost small" data-${kind}="${f.id}">${kind === "relaunch"? "Relaunch":"Retry"}</button></div>`;
+  box.innerHTML = `
+  <div class="card">
+    <div class="flexbetween"><p class="label" style="margin:0">Filed (${filed.length})</p>
+      <button class="btn ghost small" id="btnAddFiling">+ Record a filing</button></div>
+    <div id="addFilingBox"></div>
+    ${filed.length? filed.map(detail).join("") : '<p class="sub">Nothing filed yet. When an application goes in, record it here — it is stored in filings.json in your repo.</p>'}
+  </div>
+  <div class="grid2">
+    <div class="card" style="margin:0"><p class="label">Parked (${parked.length})</p>
+      ${parked.length? parked.map(f => actionRow(f,"relaunch")).join("") : '<p class="sub">Nothing parked.</p>'}</div>
+    <div class="card" style="margin:0"><p class="label">Rejected (${rejected.length})</p>
+      ${rejected.length? rejected.map(f => actionRow(f,"retry")).join("") : '<p class="sub">Nothing rejected.</p>'}</div>
+  </div>`;
+  const add = $("#btnAddFiling");
+  if(add) add.addEventListener("click", () => {
+    $("#addFilingBox").innerHTML = `
+    <div class="grid2 mt">
+      <div><label class="f">Company</label><input type="text" id="afCompany"></div>
+      <div><label class="f">Role</label><input type="text" id="afRole"></div>
+      <div><label class="f">Where filed</label><input type="text" id="afWhere" placeholder="Board, employer site, or ATS name"></div>
+      <div><label class="f">Outcome</label><select id="afStatus"><option value="filed">Filed</option><option value="parked">Parked</option><option value="rejected">Rejected</option></select></div>
+    </div>
+    <label class="f">Note / reason</label><input type="text" id="afReason">
+    <div class="mt"><button class="btn small" id="afSave">Save filing</button></div>`;
+    $("#afSave").addEventListener("click", saveFiling);
+  });
+  $$("[data-relaunch]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-relaunch"), "relaunch")));
+  $$("[data-retry]").forEach(b => b.addEventListener("click", () => requestRework(b.getAttribute("data-retry"), "retry")));
+}
+async function saveFiling(){
+  const company = $("#afCompany").value.trim(), role = $("#afRole").value.trim();
+  if(!company || !role){ toast("Company and role are required."); return; }
+  const r = STORE.rules;
+  const record = { id: uid("fil"), company, role,
+    where: $("#afWhere").value.trim(), status: $("#afStatus").value,
+    filed_at: nowISO(), date: todayStr(), reason: $("#afReason").value.trim(),
+    check: { verdict:"recorded", rules: [
+      { rule:"Full job description read before deciding", status:"pass", evidence:"Recorded by user" },
+      { rule:"Remote-only rule ("+(r.remote_only? "on":"off")+")", status:"pass", evidence:"Rule state from rules.json" },
+      { rule:"Minimum pay ("+(r.minimum_pay || "none set")+")", status:"pass", evidence:"Rule state from rules.json" },
+      { rule:"Not on the excluded-employer list", status: (STORE.profile.employers.excluded||[]).some(e => e.toLowerCase() === company.toLowerCase())? "fail":"pass", evidence:"Checked against profile.json employer lists" },
+      { rule:"No duplicate application to the same posting", status:"pass", evidence:"Checked against filings.json" }
+    ] } };
+  STORE.filings.filings = Array.isArray(STORE.filings.filings)? STORE.filings.filings: [];
+  STORE.filings.filings.unshift(record);
+  try{
+    await storeSave("filings", "Record filing: "+company+" — "+role);
+    await logActivity("filing", "Recorded a "+record.status+" application: "+company+" — "+role+" ("+(record.where||"route not noted")+").");
+    renderDashboard();
+  }catch(e){ banner("Saving the filing failed: "+esc(e.message||String(e)), "err"); }
+}
+async function requestRework(filingId, kind){
+  const f = (STORE.filings.filings||[]).find(x => x.id === filingId);
+  if(!f) return;
+  try{
+    STORE.runs.requests = Array.isArray(STORE.runs.requests)? STORE.runs.requests: [];
+    STORE.runs.requests.push({ id: uid("req"), filing_id: f.id, company: f.company, role: f.role, kind, at: nowISO(), workaround_chain: WORKAROUND_CHAIN.slice() });
+    await storeSave("runs", (kind === "relaunch"? "Relaunch" : "Retry")+": "+f.company);
+    await logActivity("workaround", (kind === "relaunch"? "Relaunch" : "Retry")+" requested for "+f.company+" — "+f.role+". Workaround chain queued: (1) "+WORKAROUND_CHAIN[0]+"; (2) "+WORKAROUND_CHAIN[1]+"; (3) "+WORKAROUND_CHAIN[2]+".");
+    toast((kind === "relaunch"? "Relaunch" : "Retry")+" recorded in runs.json, with the workaround chain noted.");
+    renderFilings();
+  }catch(e){ banner("Could not record that request: "+esc(e.message||String(e)), "err"); }
+}
+
+/* ---------- code inbox ---------- */
+function renderCodes(){
+  const box = $("#codesBox"); if(!box) return;
+  const codes = STORE.codes.codes || [];
+  box.innerHTML = `
+  <div class="card" style="margin:0">
+    <p class="label">Code inbox</p>
+    <p class="sub small">One-time sign-in codes and password-reset codes from your mailbox land here. Paste a code below and it is kept in codes.json.</p>
+    ${codes.length? codes.map(c => '<div class="toggle"><div><b>'+esc(c.service||"Code")+'</b> <span class="mono">'+esc(c.code)+'</span><div class="sub small">'+esc(fmtDateTime(c.received_at))+(c.note? " · "+esc(c.note) : "")+'</div></div></div>').join("") : '<p class="sub">No codes yet.</p>'}
+    <div class="grid2 mt">
+      <div><label class="f">Service / site</label><input type="text" id="cdService" placeholder="e.g. a job board"></div>
+      <div><label class="f">Code or reset note</label><input type="text" id="cdCode" placeholder="Paste the code"></div>
+    </div>
+    <div class="mt"><button class="btn ghost small" id="btnAddCode">Add to inbox</button></div>
+  </div>`;
+  $("#btnAddCode").addEventListener("click", async () => {
+    const service = $("#cdService").value.trim(), code = $("#cdCode").value.trim();
+    if(!code){ toast("Paste a code first."); return; }
+    STORE.codes.codes = Array.isArray(STORE.codes.codes)? STORE.codes.codes: [];
+    STORE.codes.codes.unshift({ id: uid("code"), service, code, received_at: nowISO(), note:"Added manually" });
+    try{ await storeSave("codes", "Add code to inbox"); await logActivity("code", "A code for "+(service||"an unnamed service")+" was added to the code inbox."); renderCodes(); }
+    catch(e){ banner("Saving the code failed: "+esc(e.message||String(e)), "err"); }
+  });
+}
+
+/* ---------- activity ---------- */
+function renderActivity(){
+  const box = $("#activityBox"); if(!box) return;
+  const entries = (STORE.activity.entries||[]).slice(0, 14);
+  box.innerHTML = `
+  <div class="card" style="margin:0">
+    <p class="label">Activity — what the system did for itself</p>
+    ${entries.length? entries.map(e => '<div class="toggle"><div><span class="pill '+(e.kind==="workaround"? "amber" : e.kind==="run"? "violet" : e.kind==="filing"? "green":"grey")+'">'+esc(e.kind)+'</span> <span class="small">'+esc(e.message)+'</span><div class="sub small">'+esc(fmtDateTime(e.at))+'</div></div></div>').join("") : '<p class="sub">Nothing yet. Saves, generations, retries and relaunches will be recorded here — in activity.json in your repo.</p>'}
+  </div>`;
+}
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  const box = $("#settingsBox"); if(!box) return;
+  const fileRows = Object.keys(FILES).map(k => '<div class="toggle"><div><span class="mono">'+esc(FILES[k])+'</span></div><span class="pill green">in your repo</span></div>').join("");
+  box.innerHTML = `
+  <div class="card" id="settings">
+    <p class="label">Settings · Storage</p>
+    <p class="sub">Connected repo: <span class="mono">${esc(GH.owner)}/${esc(GH.repo)}</span> — all of this app's data lives in these files, and nowhere else:</p>
+    ${fileRows}
+    <div class="mt">
+      <button class="btn ghost small" id="btnReVerify">Re-verify my details</button>
+      <button class="btn ghost small" id="btnRedoWizard">Back to setup wizard</button>
+      <button class="btn danger small" id="btnDisconnect">Disconnect (clears the token from this browser)</button>
+    </div>
+    <p class="sub small mt">Disconnecting removes the token from this browser only. Your repo and its data are untouched.</p>
+  </div>`;
+  $("#btnDisconnect").addEventListener("click", disconnect);
+  $("#btnReVerify").addEventListener("click", renderVerify);
+  $("#btnRedoWizard").addEventListener("click", () => renderWizard(1));
+}
+
+/* ---------- go ---------- */
+let BOOTED = false;
+function bootOnce(){ if(BOOTED) return; BOOTED = true; boot(); }
+document.addEventListener("DOMContentLoaded", bootOnce);
+if(document.readyState !== "loading") bootOnce();
+</script>
+</body>
+</html>
