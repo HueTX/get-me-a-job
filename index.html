@@ -1394,14 +1394,21 @@ function renderDashboard(){
     if(rest) h += ' <span class="pill grey">All other · '+rest+'</span>';
     return h;
   };
-  const countCard = (label, n, pillCls, pillsHtml) => `
+  const countCard = (label, n, pillCls, pillsHtml) => {
+    /* tracker-style ring gauge: the arc fills to this metric's true share of Evaluated */
+    const pct = label === "Evaluated"? 100 : (evaluated > 0? Math.round(n / evaluated * 100) : 0);
+    const rc = { green:"var(--green)", amber:"var(--amber)", red:"var(--red)", violet:"var(--accent)" }[pillCls] || "var(--accent)";
+    return `
     <div class="card" style="text-align:center;margin:0">
       <p class="label">${label}</p>
-      <div style="width:104px;height:104px;margin:6px auto;border-radius:50%;border:3px solid var(--accent-soft);display:flex;align-items:center;justify-content:center">
-        <span class="big">${n}</span>
+      <div style="width:104px;height:104px;margin:6px auto;border-radius:50%;background:conic-gradient(${rc} ${pct}%, #EFE8D8 ${pct}%);display:flex;align-items:center;justify-content:center">
+        <div style="width:86px;height:86px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center">
+          <span class="big">${n}</span>
+        </div>
       </div>
       <div>${pillsHtml}</div>
     </div>`;
+  };
 
   /* stages — engine-reported when present, derived from run state otherwise */
   const stageDefs = [
