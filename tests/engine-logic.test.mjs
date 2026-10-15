@@ -15,16 +15,16 @@ function ok(cond, name, extra) {
 function rule(f, name) { return (f.check.rules || []).find((r) => r.rule === name) || {}; }
 
 const RESUME = {
-  detection: { skills: ["azure", "cloud architecture", "kubernetes"],
-    employers: [], titles: ["Cloud Architect"], industries: [] },
-  resume: { filename: "resume.pdf", text: "Cloud architect with 13 years on Azure. Cloud architecture, Kubernetes, Terraform, enterprise architecture strategy and roadmaps." },
+  detection: { skills: ["operations management", "vendor management", "budgeting"],
+    employers: [], titles: ["Operations Director"], industries: [] },
+  resume: { filename: "resume.pdf", text: "Operations leader with 12 years running multi-site service operations. Operations management, vendor management, budgeting, process improvement and team leadership across regional teams." },
 };
 function setup(ruleOverrides = {}, profileOverrides = {}) {
   engine.rules = Object.assign({ remote_only: true, minimum_pay: "", maximum_pay: "",
     posting_max_age_days: 7, block_hands_on: true, block_presales: false,
     focus_sectors: [], always_reject: [], extra_notes: "" }, ruleOverrides);
   engine.profile = Object.assign({ employers: { target: [], excluded: [] } }, RESUME, profileOverrides);
-  engine.coverage = { saved: { titles: ["Cloud Architect"], lanes: [] } };
+  engine.coverage = { saved: { titles: ["Operations Director"], lanes: [] } };
   engine.runs = { current_run: { evaluated_extra: 0 } };
   engine.filings = { filings: [] };
   engine.dedupe = new Set();
@@ -33,13 +33,13 @@ function setup(ruleOverrides = {}, profileOverrides = {}) {
   engine.rejectedThisRun = 0; engine.notEvaluatedThisRun = 0;
   engine.boardResolver = null;
 }
-const GOOD_JD = "We are hiring a Cloud Architect to lead the design of enterprise cloud architecture on Azure. " +
-  "You will develop architecture roadmaps and collaborate with engineering teams to deliver secure cloud solutions. " +
+const GOOD_JD = "We are hiring an Operations Director to lead regional service operations across multiple sites. " +
+  "You will own vendor management, budgeting and process improvement, and lead regional teams to deliver reliable service. " +
   "This is a fully remote position open to candidates anywhere in the United States. " +
-  "The salary range is $175,000 - $195,000 per year. Requirements include experience with Azure and cloud architecture.";
+  "The salary range is $120,000 - $140,000 per year. Requirements include experience with operations management and budgeting.";
 const fresh = () => new Date().toISOString();
 function posting(over = {}) {
-  return Object.assign({ company: "Acme Health", title: "Senior Cloud Architect",
+  return Object.assign({ company: "Acme Logistics", title: "Senior Operations Director",
     location: "Remote, United States", url: "https://example.com/job/1",
     description: GOOD_JD, posted_at: fresh() }, over);
 }
@@ -74,9 +74,9 @@ ok(f.status === "rejected" && f.category === "not-remote" && rule(f, "100% remot
 /* --- 3. required hybrid schedule rejects with a quoted duty --- */
 setup();
 await __test.evaluatePosting(posting({ description:
-  "You will design enterprise cloud architecture on Azure and develop roadmaps with engineering teams. " +
-  "This hybrid role requires 3 days per week in the office in Austin, Texas. " +
-  "Requirements include experience with Azure and cloud architecture." }), "Greenhouse", null);
+  "You will lead regional operations and vendor management with site teams. " +
+  "This hybrid role requires 3 days per week in the office in Denver, Colorado. " +
+  "Requirements include experience with operations management and budgeting." }), "Greenhouse", null);
 f = engine.newFilings[0];
 ok(f.status === "rejected" && f.category === "not-remote" &&
    rule(f, "100% remote US").evidence.includes("hybrid role requires 3 days"),
@@ -84,14 +84,14 @@ ok(f.status === "rejected" && f.category === "not-remote" &&
 
 /* --- 4. pay above the ceiling rejects --- */
 setup({ maximum_pay: "$200,000" });
-await __test.evaluatePosting(posting({ description: GOOD_JD.replace("$175,000 - $195,000", "$240,000 - $260,000") }), "Greenhouse", null);
+await __test.evaluatePosting(posting({ description: GOOD_JD.replace("$120,000 - $140,000", "$240,000 - $260,000") }), "Greenhouse", null);
 f = engine.newFilings[0];
 ok(f.status === "rejected" && f.category === "pay-outside-band" && rule(f, "pay band").status === "fail",
    "range topping above the ceiling rejects", f.category);
 
 /* --- 5. unpublished pay stays eligible --- */
-setup({ minimum_pay: "$160,000" });
-await __test.evaluatePosting(posting({ description: GOOD_JD.replace(" The salary range is $175,000 - $195,000 per year.", "") }), "Greenhouse", null);
+setup({ minimum_pay: "$100,000" });
+await __test.evaluatePosting(posting({ description: GOOD_JD.replace(" The salary range is $120,000 - $140,000 per year.", "") }), "Greenhouse", null);
 f = engine.newFilings[0];
 ok(f.status === "parked" && rule(f, "pay band").status === "pass" &&
    rule(f, "pay band").evidence.includes("unpublished pay stays eligible"),
@@ -107,7 +107,7 @@ ok(f.status === "rejected" && f.category === "stale-posting" && rule(f, "posting
 /* --- 7. whole-role hands-on duties reject --- */
 setup();
 await __test.evaluatePosting(posting({ description:
-  "As a Cloud Architect you will design Azure cloud architecture for clients. " +
+  "As an Operations Director you will oversee regional service operations. " +
   "You will spend 70% of your time coding new platform features and writing code daily. " +
   "This is a fully remote position in the United States." }), "Greenhouse", null);
 f = engine.newFilings[0];
@@ -117,7 +117,7 @@ ok(f.status === "rejected" && f.category === "hands-on-duties" && rule(f, "hands
 /* --- 8. pre-sales bar: on rejects, off is an honest grey --- */
 setup({ block_presales: true });
 await __test.evaluatePosting(posting({ description:
-  "You will lead cloud architecture engagements for enterprise clients on Azure. " +
+  "You will lead operations engagements for regional clients. " +
   "You will carry a sales quota for your territory and own pipeline generation. " +
   "This is a fully remote position in the United States." }), "Greenhouse", null);
 f = engine.newFilings[0];
@@ -125,7 +125,7 @@ ok(f.status === "rejected" && f.category === "pre-sales" && rule(f, "pre-sales b
    "quota-carrying role rejects when the pre-sales bar is on", f.category);
 setup({ block_presales: false });
 await __test.evaluatePosting(posting({ description:
-  "You will lead cloud architecture engagements for enterprise clients on Azure. " +
+  "You will lead operations engagements for regional clients. " +
   "You will carry a sales quota for your territory and own pipeline generation. " +
   "This is a fully remote position in the United States." }), "Greenhouse", null);
 f = engine.newFilings[0];
@@ -171,12 +171,12 @@ ok(engine.newFilings.length === 0 && engine.checkedThisRun === 1,
 
 /* --- 14. workaround pass: the employer's own board governs a feed reject --- */
 setup();
-engine.boardResolver = async () => ({ source: "Greenhouse", slug: "acmehealth",
+engine.boardResolver = async () => ({ source: "Greenhouse", slug: "acmelogistics",
   postings: [posting({ url: "https://boards.example.com/1" })] });
 await __test.evaluatePosting(posting({ description:
-  "You will design enterprise cloud architecture on Azure and develop roadmaps with engineering teams. " +
-  "This hybrid role requires 3 days per week in the office in Austin, Texas. " +
-  "Requirements include experience with Azure and cloud architecture." }), "RemoteOK", null);
+  "You will lead regional operations and vendor management with site teams. " +
+  "This hybrid role requires 3 days per week in the office in Denver, Colorado. " +
+  "Requirements include experience with operations management and budgeting." }), "RemoteOK", null);
 f = engine.newFilings[0];
 ok(f.status === "parked" && f.where === "Greenhouse" &&
    f.check.rules.some((r) => r.rule === "workarounds tried" && r.status === "pass"),
