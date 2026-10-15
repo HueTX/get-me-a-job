@@ -211,6 +211,11 @@ function ghLoad(){ try{ const raw = localStorage.getItem(GH_KEY); return raw? JS
 function ghSave(){ try{ localStorage.setItem(GH_KEY, JSON.stringify(GH)); }catch(e){} }
 function ghClear(){ try{ localStorage.removeItem(GH_KEY); }catch(e){} GH = null; }
 
+const ACCOUNT_KEY = "getMeAJobAccount";  // localStorage: {name, email, owner, repo, signed_out, created_at}
+function accountLoad(){ try{ const raw = localStorage.getItem(ACCOUNT_KEY); return raw? JSON.parse(raw): null; }catch(e){ return null; } }
+function accountSave(a){ try{ localStorage.setItem(ACCOUNT_KEY, JSON.stringify(a)); }catch(e){} }
+function accountClear(){ try{ localStorage.removeItem(ACCOUNT_KEY); }catch(e){} }
+
 async function ghFetch(path, opts){
   opts = opts || {};
   const headers = Object.assign({
@@ -725,28 +730,38 @@ function setBusy(btn, busy, label){
 /* ---------- connect screen ---------- */
 function renderConnect(prefill, errorMsg){
   headActions("");
-  const p = prefill || ghLoad() || { owner:"", repo:"get-me-a-job-data", token:"" };
-  view().innerHTML = `
-  <div class="card" style="max-width:640px;margin:26px auto">
-    <p class="label">Step 0 · Connect your GitHub</p>
-    <h2 style="margin:0 0 6px;font-size:22px">Your data lives in your repo</h2>
-    <p class="sub" style="line-height:1.55">
-      Get Me A JOB stores everything — your profile, resume, titles, lanes, rules, answers, runs and filings —
-      as JSON files inside a private GitHub repository that <b>you</b> own. This page only ever talks to
-      <span class="mono">api.github.com</span>.
-    </p>
-    <div class="notice info">
+  const a = accountLoad() || {};
+  const g = ghLoad() || {};
+  const p = prefill || { owner: a.owner || g.owner || "", repo: a.repo || g.repo || "get-me-a-job-data",
+    token: g.token || "", name: a.name || "", email: a.email || "" };
+  const returning = !!(a.owner || p.owner);
+  const setupSteps = `
       <b>Set it up once:</b>
       <ol style="margin:8px 0 0;padding-left:19px;line-height:1.6">
         <li>On GitHub, create a <b>private</b> repo (suggested name: <span class="kbd">get-me-a-job-data</span>).</li>
         <li>Create a <b>fine-grained personal access token</b>: GitHub → Settings → Developer settings →
             Personal access tokens → Fine-grained tokens. Repository access: <b>only that repo</b>.
             Permissions: <b>Contents — Read and write</b>. Nothing else.</li>
-        <li>Paste the token below. It is stored <b>only in this browser</b> (localStorage) and is sent
+        <li>Paste the token below. It is stored <b>only in this browser</b> and is sent
             only to <span class="mono">api.github.com</span> — never anywhere else, never into the repo.</li>
-      </ol>
-    </div>
+      </ol>`;
+  view().innerHTML = `
+  <div class="card" style="max-width:640px;margin:26px auto">
+    <p class="label">${returning? "Welcome back" : "Step 0 · Create your account"}</p>
+    <h2 style="margin:0 0 6px;font-size:22px">${returning? "Reconnect your GitHub" : "Create your account"}</h2>
+    <p class="sub" style="line-height:1.55">
+      Your account is a private GitHub repository that <b>you</b> own. Get Me A JOB stores everything in it —
+      your profile, resume, questionnaire answers, titles, lanes, rules, runs and filings — as JSON files.
+      This page only ever talks to <span class="mono">api.github.com</span>.
+    </p>
+    ${returning
+      ? '<details class="fold"><summary>Show the one-time GitHub setup steps</summary><div class="notice info">'+setupSteps+'</div></details>'
+      : '<div class="notice info">'+setupSteps+'</div>'}
     ${errorMsg? '<div class="notice err">'+esc(errorMsg)+'</div>' : ""}
+    <label class="f">Your name</label>
+    <input type="text" id="acctName" value="${esc(p.name||"")}" placeholder="Your full name" autocomplete="name">
+    <label class="f">Your email</label>
+    <input type="email" id="acctEmail" value="${esc(p.email||"")}" placeholder="you@example.com" autocomplete="email">
     <label class="f">GitHub username (owner)</label>
     <input type="text" id="ghOwner" value="${esc(p.owner||"")}" placeholder="your-github-username" autocomplete="off">
     <label class="f">Repository name</label>
@@ -754,17 +769,19 @@ function renderConnect(prefill, errorMsg){
     <label class="f">Fine-grained token (Contents read &amp; write, that repo only)</label>
     <input type="password" id="ghToken" value="${esc(p.token||"")}" placeholder="github_pat_…" autocomplete="off">
     <div class="mt">
-      <button class="btn" id="btnConnect">Connect</button>
+      <button class="btn" id="btnConnect">${returning? "Reconnect" : "Create account & connect"}</button>
     </div>
-    <p class="sub small mt">First connect creates the empty <span class="mono">data/</span> files in the repo.
-    Returning? Connecting loads your files and walks you through a quick “Verify your details” check before your dashboard opens.</p>
+    <p class="sub small mt">Your account and GitHub connection stay saved in this browser. Signing out locks the app —
+    signing back in restores everything exactly as you left it. Nothing about your account is ever stored anywhere but your repo and this browser.</p>
   </div>`;
   $("#btnConnect").addEventListener("click", onConnect);
   $("#ghToken").addEventListener("keydown", e => { if(e.key === "Enter") onConnect(); });
 }
 async function onConnect(){
+  const name = $("#acctName").value.trim(), email = $("#acctEmail").value.trim();
   const owner = $("#ghOwner").value.trim(), repo = $("#ghRepo").value.trim(), token = $("#ghToken").value.trim();
   if(!owner || !repo || !token){ banner("Fill in owner, repo, and token to connect.", "warn"); return; }
+  const prior = ghLoad();
   const btn = $("#btnConnect"); setBusy(btn, true, "Connecting…");
   GH = { owner, repo, token };
   try{
@@ -775,43 +792,112 @@ async function onConnect(){
     ghSave();
     const created = await storeInit();
     await storeLoad();
+    const meta = accountLoad() || {};
+    accountSave({ name: name || meta.name || (STORE.profile.name || ""), email: email || meta.email || (STORE.profile.email || ""),
+      owner, repo, signed_out: false, created_at: meta.created_at || nowISO() });
+    let seeded = false;
+    if(STORE.profile){
+      if(!STORE.profile.name && name){ STORE.profile.name = name; seeded = true; }
+      if(!STORE.profile.email && email){ STORE.profile.email = email; seeded = true; }
+    }
+    if(seeded) await storeSave("profile", "Account details");
     if(created.length) await logActivity("setup", "Initialized the data store in "+owner+"/"+repo+": created "+created.join(", ")+".");
     banner("");
+    if(created.length){ renderWizard(1); return; }
     const hasProfile = STORE.profile && (STORE.profile.name || STORE.profile.resume.text);
     if(hasProfile){ renderVerify(); }
     else { renderWizard(1); }
   }catch(e){
-    GH = null; ghClear();
+    GH = prior; if(prior) ghSave(); else ghClear();
     setBusy(btn, false);
-    renderConnect({owner, repo, token}, e.message || String(e));
+    renderConnect({owner, repo, token, name, email}, e.message || String(e));
   }
 }
-function disconnect(){
-  ghClear(); mailTokenClear(); STORE = null;
-  banner("Disconnected. Your token was cleared from this browser — your data stays in your repo, untouched.", "ok");
+/* ---------- account session: sign out locks, it never wipes ---------- */
+function signOut(){
+  const a = accountLoad() || {};
+  const g = ghLoad() || GH || {};
+  const prof = STORE && STORE.profile? STORE.profile : {};
+  accountSave(Object.assign({}, a, {
+    owner: g.owner || a.owner || "", repo: g.repo || a.repo || "",
+    name: a.name || prof.name || "", email: a.email || prof.email || "",
+    signed_out: true }));
+  STORE = null; GH = null;
+  banner("");
+  renderLogin();
+}
+function forgetDevice(){
+  ghClear(); mailTokenClear(); accountClear(); STORE = null;
+  banner("Forgotten. This browser no longer holds your account or sign-ins — your data stays in your repo, untouched.", "ok");
   renderConnect(null, "");
+}
+function renderLogin(){
+  headActions("");
+  const a = accountLoad() || {};
+  const g = ghLoad() || {};
+  const first = (a.name || "").split(" ")[0];
+  view().innerHTML = `
+  <div class="card" style="max-width:560px;margin:26px auto">
+    <p class="label">Sign in</p>
+    <h2 style="margin:0 0 10px;font-size:22px">Welcome back${first? ", "+esc(first) : ""}</h2>
+    <div class="toggle"><div><b>Account</b><div class="sub small">${esc(a.name || "—")}${a.email? " · "+esc(a.email) : ""}</div></div></div>
+    <div class="toggle"><div><b>Data repo</b><div class="sub small mono">${esc(g.owner || a.owner || "")}/${esc(g.repo || a.repo || "")}</div></div></div>
+    <div class="mt"><button class="btn" id="btnSignIn">Sign in</button></div>
+    <p class="sub small mt">Sign-in reloads everything from your repo and runs the quick “Verify your details” check —
+    your profile, questionnaire answers, titles, lanes, rules, runs and filings, exactly as you left them.</p>
+    <p class="sub small"><a href="#" id="lnkDifferent">Connect a different repo</a> · <a href="#" id="lnkForget">Forget this account on this browser</a></p>
+  </div>`;
+  $("#btnSignIn").addEventListener("click", signIn);
+  $("#lnkForget").addEventListener("click", e => { e.preventDefault(); forgetDevice(); });
+  $("#lnkDifferent").addEventListener("click", e => { e.preventDefault();
+    renderConnect({ owner:"", repo:"get-me-a-job-data", token:"", name:a.name || "", email:a.email || "" }, ""); });
+}
+async function signIn(){
+  const saved = ghLoad();
+  if(!saved || !saved.token){
+    renderConnect(null, "This browser no longer holds your GitHub token — reconnect once and it will be remembered from then on.");
+    return;
+  }
+  const a = accountLoad() || {}; a.signed_out = false; accountSave(a);
+  GH = saved;
+  await loadStoreAndRoute();
+}
+async function loadStoreAndRoute(){
+  view().innerHTML = '<div class="card"><p class="sub">Loading your data from <span class="mono">'+esc(GH.owner)+"/"+esc(GH.repo)+'</span>…</p></div>';
+  try{
+    await storeInit();
+    await storeLoad();
+    const meta = accountLoad();
+    if(meta && STORE.profile){
+      let changed = false;
+      if(!meta.name && STORE.profile.name){ meta.name = STORE.profile.name; changed = true; }
+      if(!meta.email && STORE.profile.email){ meta.email = STORE.profile.email; changed = true; }
+      if(changed) accountSave(meta);
+    }
+    const hasProfile = STORE.profile && (STORE.profile.name || STORE.profile.resume.text);
+    if(hasProfile) renderVerify(); else renderWizard(STORE.profile.wizard_step || 1);
+  }catch(e){
+    view().innerHTML = '<div class="card"><div class="notice err">Could not load your repo data: '+esc(e.message||String(e))+'</div>'+
+      '<button class="btn ghost" id="btnRetryBoot">Try again</button> <button class="btn ghost" id="btnForgetBoot">Forget &amp; start over</button></div>';
+    $("#btnRetryBoot").addEventListener("click", loadStoreAndRoute);
+    $("#btnForgetBoot").addEventListener("click", forgetDevice);
+  }
 }
 
 /* ---------- boot ---------- */
 async function boot(){
   const saved = ghLoad();
-  if(!saved || !saved.token){ renderConnect(null, ""); return; }
-  GH = saved;
-  view().innerHTML = '<div class="card"><p class="sub">Reconnecting to <span class="mono">'+esc(saved.owner)+"/"+esc(saved.repo)+'</span>…</p></div>';
-  try{
-    await storeInit();
-    await storeLoad();
-    const hasProfile = STORE.profile && (STORE.profile.name || STORE.profile.resume.text);
-    if(hasProfile) renderVerify(); else renderWizard(STORE.profile.wizard_step || 1);
-  }catch(e){
-    GH = null;
-    view().innerHTML = '<div class="card"><div class="notice err">Could not load your repo data: '+esc(e.message||String(e))+'</div>'+
-      '<button class="btn ghost" id="btnRetryBoot">Try again</button> <button class="btn ghost" id="btnDiscBoot">Disconnect</button></div>';
-    $("#btnRetryBoot").addEventListener("click", boot);
-    $("#btnDiscBoot").addEventListener("click", disconnect);
+  const a = accountLoad();
+  if(!saved || !saved.token){
+    if(a && a.owner){ renderConnect({ owner:a.owner, repo:a.repo, token:"", name:a.name || "", email:a.email || "" }, ""); return; }
+    renderConnect(null, "");
+    return;
   }
+  if(a && a.signed_out){ renderLogin(); return; }
+  GH = saved;
+  if(!a) accountSave({ name:"", email:"", owner:saved.owner, repo:saved.repo, signed_out:false, created_at: nowISO() });
+  await loadStoreAndRoute();
 }
-
 /* ---------- signup wizard (11 steps) ---------- */
 const WIZ_STEPS = ["Contact","Address","Resume","Title & coverage","LinkedIn","Mailbox","Employers","Salary","Rules","Answers","Review & save"];
 let WIZ = 1;
@@ -841,8 +927,8 @@ function wizShell(step, inner){
 }
 function renderWizard(step){
   WIZ = step;
-  headActions('<button class="btn ghost small" id="btnHeadDisc">Disconnect</button>');
-  const d = $("#btnHeadDisc"); if(d) d.addEventListener("click", disconnect);
+  headActions('<button class="btn ghost small" id="btnHeadDisc">Sign out</button>');
+  const d = $("#btnHeadDisc"); if(d) d.addEventListener("click", signOut);
   const renderers = {1:wizStep1,2:wizStep2,3:wizStep3,4:wizStep4,5:wizStep5,6:wizStep6,7:wizStep7,8:wizStep8,9:wizStep9,10:wizStep10,11:wizStep11};
   (renderers[step] || wizStep1)();
 }
@@ -1162,8 +1248,8 @@ async function collect11(){ /* nothing to collect — all sections already live 
 
 /* ---------- verify-at-login gate ---------- */
 function renderVerify(){
-  headActions('<button class="btn ghost small" id="btnHeadDisc2">Disconnect</button>');
-  const d = $("#btnHeadDisc2"); if(d) d.addEventListener("click", disconnect);
+  headActions('<button class="btn ghost small" id="btnHeadDisc2">Sign out</button>');
+  const d = $("#btnHeadDisc2"); if(d) d.addEventListener("click", signOut);
   const comp = completeness();
   const rows = comp.sections.map(s => `
     <div class="toggle">
@@ -1199,8 +1285,8 @@ function filingsToday(){
   return (STORE.filings.filings||[]).filter(f => String(f.filed_at||"").slice(0,10) === t);
 }
 function renderDashboard(){
-  headActions('<button class="btn ghost small" id="btnHeadSettings">Settings</button> <button class="btn ghost small" id="btnHeadDisc3">Disconnect</button>');
-  const ds = $("#btnHeadDisc3"); if(ds) ds.addEventListener("click", disconnect);
+  headActions('<button class="btn ghost small" id="btnHeadSettings">Settings</button> <button class="btn ghost small" id="btnHeadDisc3">Sign out</button>');
+  const ds = $("#btnHeadDisc3"); if(ds) ds.addEventListener("click", signOut);
   const st = $("#btnHeadSettings"); if(st) st.addEventListener("click", () => { location.hash = "#settings"; renderDashboard(); });
   banner("");
   const todays = filingsToday();
@@ -1833,11 +1919,13 @@ function renderSettings(){
     <div class="mt">
       <button class="btn ghost small" id="btnReVerify">Re-verify my details</button>
       <button class="btn ghost small" id="btnRedoWizard">Back to setup wizard</button>
-      <button class="btn danger small" id="btnDisconnect">Disconnect (clears the tokens from this browser)</button>
+      <button class="btn danger small" id="btnDisconnect">Sign out</button>
+      <button class="btn ghost small" id="btnForget">Forget this account on this browser</button>
     </div>
-    <p class="sub small mt">Your data is stored as nine small files under <span class="mono">data/</span> in that repo (profile, coverage, rules, answers, connections, runs, filings, codes, activity) — and nowhere else. Sign-in tokens live only in this browser; disconnecting removes them and leaves your repo untouched.</p>
+    <p class="sub small mt">Your data is stored as nine small files under <span class="mono">data/</span> in that repo (profile, coverage, rules, answers, connections, runs, filings, codes, activity) — and nowhere else. Signing out locks the app on this browser — your account, GitHub connection and data stay saved here, and signing back in restores everything. Forget removes the saved account and sign-in tokens from this browser only; your repo is never touched.</p>
   </div>`;
-  $("#btnDisconnect").addEventListener("click", disconnect);
+  $("#btnDisconnect").addEventListener("click", signOut);
+  const bf = $("#btnForget"); if(bf) bf.addEventListener("click", forgetDevice);
   $("#btnReVerify").addEventListener("click", renderVerify);
   $("#btnRedoWizard").addEventListener("click", () => renderWizard(1));
   const sp = $("#btnSetProfile"); if(sp) sp.addEventListener("click", () => renderWizard(1));
