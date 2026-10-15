@@ -368,74 +368,144 @@ const SKILL_WORDS = [
   "Microsoft Azure","Azure","AWS","Amazon Web Services","Google Cloud","GCP","Microsoft 365","Office 365",
   "Windows Server","Active Directory","VMware","Hyper-V","Linux","PowerShell","Bash","Python","JavaScript",
   "SQL","SQL Server","MySQL","PostgreSQL","Oracle","Networking","TCP/IP","DNS","DHCP","VPN","Firewalls",
-  "Cybersecurity","Security","Compliance","Identity","Entra ID","Intune","Exchange","SharePoint","Teams",
+  "Cybersecurity","Security","Compliance","Entra ID","Intune","Exchange","SharePoint",
   "Terraform","Ansible","Docker","Kubernetes","CI/CD","DevOps","Git","Agile","Scrum","Project Management",
   "Data Analysis","Excel","Power BI","Tableau","Salesforce","SAP","ServiceNow","ITIL","Help Desk",
   "Technical Support","Cloud Migration","Architecture","Solutions Architecture","Enterprise Architecture",
   "Machine Learning","Data Engineering","ETL","APIs","REST","Customer Service","Training","Documentation",
-  "Healthcare IT","HIPAA","Finance","Accounting","Marketing","Sales","Human Resources","Operations"
+  "Healthcare IT","HIPAA","Finance","Accounting","Human Resources","Operations",
+  /* data & analytics */
+  "pandas","NumPy","Snowflake","Looker","dbt","Google Analytics","A/B Testing","Data Visualization",
+  "Data Modeling","Statistical Analysis","Forecasting","BigQuery","Redshift","Data Warehousing","R Programming",
+  /* healthcare & clinical */
+  "Epic EHR","Cerner","MEDITECH","EHR","EMR","Critical Care","Patient Care","Patient Assessment",
+  "Ventilator Management","IV Therapy","Telemetry","Wound Care","Medication Administration","ACLS","BLS","PALS","CCRN",
+  "Clinical Documentation","Infection Control","Triage","Phlebotomy","Care Planning",
+  /* engineering & design */
+  "SolidWorks","AutoCAD","Revit","ANSYS","FEA","Finite Element Analysis","GD&T","HVAC","HVAC Design",
+  "Load Calculations","Energy Modeling","ASHRAE","MATLAB","Creo","CATIA","BIM","Navisworks","Commissioning",
+  "Thermodynamics","Fluid Mechanics","Blueprint Reading","Tolerance Analysis","Energy Audits",
+  /* marketing & growth */
+  "HubSpot","Google Ads","LinkedIn Ads","SEO","SEM","Content Strategy","Content Marketing","Digital Marketing",
+  "Marketing Automation","Email Marketing","Social Media Marketing","WordPress","Campaign Management",
+  "Demand Generation","Lead Generation","Google Optimize","Copywriting","Brand Management","Market Research","Product Marketing"
 ];
+/* everyday words that also name skills — only trusted inside the resume's own Skills section,
+   so prose like "supply chain teams" or an employer's name never becomes a detected skill */
+const AMBIGUOUS_SKILLS = ["Teams","Sales","Identity","Marketing"];
 const INDUSTRY_WORDS = {
-  "Healthcare": ["healthcare","hospital","clinic","patient","medical","pharma","biotech","hipaa","ehr","epic"],
+  "Healthcare": ["healthcare","health","hospital","clinic","patient","medical","pharma","biotech","hipaa","ehr","epic","nurse","nursing"],
   "Finance & Banking": ["bank","financial","finance","insurance","fintech","payments","trading","audit"],
   "Technology": ["software","saas","technology","it services","cloud","startup","platform"],
-  "Energy & Utilities": ["energy","oil","gas","utility","utilities","power","renewable","petroleum"],
+  "Energy & Utilities": ["energy","oil","gas","utility","utilities","power generation","electric power","power plant","renewable","petroleum"],
   "Government": ["government","federal","state agency","public sector","municipal","defense"],
-  "Education": ["education","university","school","college","learning","academic"],
+  "Education": ["university","college","school","academic","school district","education sector"],
   "Retail & E-commerce": ["retail","e-commerce","ecommerce","store","consumer","merchandising"],
-  "Manufacturing": ["manufacturing","factory","plant","industrial","supply chain","production"],
-  "Logistics & Transportation": ["logistics","transportation","shipping","warehouse","fleet","freight"],
+  "Manufacturing": ["manufacturing","factory","plant","industrial","production"],
+  "Logistics & Transportation": ["logistics","transportation","shipping","warehouse","fleet","freight","supply chain"],
   "Media & Entertainment": ["media","entertainment","broadcast","publishing","advertising","streaming"]
 };
 const TITLE_HINTS = ["architect","engineer","analyst","manager","administrator","consultant","specialist",
-  "designer","developer","scientist","lead","director","coordinator","technician","support","strategist","owner"];
+  "designer","developer","scientist","lead","director","coordinator","technician","support","strategist","owner",
+  "nurse","therapist","pharmacist","teacher","officer","supervisor","representative","accountant","auditor","counselor"];
 
+const SECTION_HEADERS = {
+  "summary":"summary","profile":"summary","objective":"summary","professional summary":"summary",
+  "experience":"experience","work experience":"experience","professional experience":"experience",
+  "employment":"experience","employment history":"experience","work history":"experience",
+  "skills":"skills","technical skills":"skills","core competencies":"skills","key skills":"skills","qualifications":"skills",
+  "education":"education","licenses":"education","licenses and education":"education",
+  "certifications":"education","education and certifications":"education"
+};
+function sectionOfLine(ln){
+  const t = ln.trim().replace(/:$/,"");
+  if(!t || t.length > 42) return null;
+  if(/^[A-Z][A-Z &\/\-]+$/.test(t)) return SECTION_HEADERS[t.toLowerCase()] || "other";
+  return SECTION_HEADERS[t.toLowerCase()] || null;
+}
 function detectFromResume(text){
   const clean = String(text||"");
   const low = clean.toLowerCase();
-  /* skills */
-  const skills = SKILL_WORDS.filter(s => {
-    const needle = s.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp("(^|[^a-z0-9])"+needle+"([^a-z0-9]|$)", "i").test(low);
-  });
-  /* industries */
-  const industries = Object.keys(INDUSTRY_WORDS).filter(ind =>
-    INDUSTRY_WORDS[ind].some(w => low.includes(w)));
-  /* years of experience from date ranges like 2015 - 2021 / Jan 2018 – Present */
-  const years = new Set();
-  const rangeRe = /(19|20)\d{2}\s*(?:-|–|—|to)\s*(?:(?:19|20)\d{2}|present|current|now)/gi;
-  let m, earliest = null, latest = null;
-  while((m = rangeRe.exec(clean)) !== null){
-    const seg = m[0];
-    const ys = seg.match(/(19|20)\d{2}/g);
-    if(ys){ const a = parseInt(ys[0],10); if(earliest===null || a<earliest) earliest = a; }
-    if(/present|current|now/i.test(seg)){ latest = new Date().getFullYear(); }
-    else if(ys && ys.length>1){ const b = parseInt(ys[ys.length-1],10); if(latest===null || b>latest) latest = b; }
-  }
-  const allYears = clean.match(/(19|20)\d{2}/g) || [];
-  allYears.forEach(y => years.add(parseInt(y,10)));
-  let yearsExp = "";
-  if(earliest !== null && latest !== null && latest >= earliest) yearsExp = String(latest - earliest);
-  /* titles held: lines that look like job titles */
-  const foundTitles = [];
+  const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const hasWord = (hay, s) => new RegExp("(^|[^a-z0-9])"+escRe(String(s).toLowerCase())+"([^a-z0-9]|$)", "i").test(hay);
+  /* split into sections so education/licenses never masquerade as experience */
+  const secs = { preamble:[], summary:[], experience:[], skills:[], education:[], other:[] };
+  let cur = "preamble";
   lines(clean).forEach(ln => {
-    const l = ln.toLowerCase();
-    if(ln.length > 4 && ln.length < 70 && TITLE_HINTS.some(h => l.includes(h)) && !/^(skills|experience|education|summary)/.test(l)){
-      const t = ln.replace(/[•|·].*$/,"").replace(/\s{2,}.*$/,"").trim();
-      if(t && !foundTitles.some(x => x.toLowerCase() === t.toLowerCase())) foundTitles.push(t);
+    const h = sectionOfLine(ln);
+    if(h){ cur = h; return; }
+    secs[cur].push(ln);
+  });
+  const secText = k => secs[k].join("\n");
+  const expText = secText("experience");
+  const skillsText = secText("skills");
+  const summaryText = secText("summary");
+  const empSource = expText.trim()? expText : [secText("preamble"), summaryText, secText("other")].join("\n");
+  /* employers + held titles from "Title — Company, City, ST" header lines */
+  const employers = [];
+  const pushEmp = name => {
+    const n = String(name||"").trim().replace(/[,.;]+$/,"").trim();
+    if(n.length >= 2 && n.length <= 50 && /[a-z]/i.test(n) && !/^(present|current|various|multiple)$/i.test(n)
+       && !employers.some(e => e.toLowerCase() === n.toLowerCase())) employers.push(n);
+  };
+  const heldTitles = [];
+  const pushTitle = t => {
+    const c = String(t||"").split(",")[0].replace(/[•·].*$/,"").replace(/\s{2,}/g," ").trim();
+    if(c.length >= 3 && c.length <= 60 && !heldTitles.some(x => x.toLowerCase() === c.toLowerCase())) heldTitles.push(c);
+  };
+  empSource.split("\n").forEach(ln => {
+    const parts = ln.split(/\s+[—–]\s+|\s+\|\s+/);
+    if(parts.length >= 2){
+      const cand = parts[parts.length-1].trim()
+        .replace(/,\s*[^,]+,\s*[A-Z]{2}(\s+\d{5})?\s*$/,"")
+        .replace(/,\s*(19|20)\d{2}\s*$/,"").trim();
+      if(!/(19|20)\d{2}/.test(cand) && !/^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(cand)) pushEmp(cand);
+      if(TITLE_HINTS.some(h => parts[0].toLowerCase().includes(h))) pushTitle(parts[0]);
     }
   });
-  /* employers: heuristic — capitalized lines near "at <Name>" or short proper-noun lines; user corrects */
-  const employers = [];
-  const atRe = /\bat\s+([A-Z][A-Za-z0-9&.,'’\- ]{2,40})/g;
-  while((m = atRe.exec(clean)) !== null){
-    const name = m[1].trim().replace(/[,.;]+$/,"");
-    if(name && !employers.some(e => e.toLowerCase()===name.toLowerCase())) employers.push(name);
+  let m;
+  const atRe = /\bat\s+([A-Z][A-Za-z0-9&.'’\-]+(?:\s+[A-Z][A-Za-z0-9&.'’\-]+){0,3})/g;
+  const empHay = empSource + "\n" + summaryText;
+  while((m = atRe.exec(empHay)) !== null) pushEmp(m[1]);
+  /* titles held: the title line under the name, plus a guarded hint scan (no bullets, no degree lines) */
+  secs.preamble.slice(1).forEach(ln => { if(ln.trim().length < 60 && TITLE_HINTS.some(h => ln.toLowerCase().includes(h))) pushTitle(ln); });
+  [expText, secText("preamble")].join("\n").split("\n").forEach(ln => {
+    const l = ln.toLowerCase();
+    if(ln.length > 4 && ln.length < 70 && ln.trim().split(/\s+/).length <= 6 && !/^\s*[-•*]/.test(ln)
+       && !ln.includes("—") && !ln.includes("|") && TITLE_HINTS.some(h => l.includes(h))
+       && !/^(b\.s\.|b\.a\.|m\.s\.|mba|ph\.d|bsn)/i.test(ln.trim())){
+      pushTitle(ln);
+    }
+  });
+  /* skills: strong vocabulary anywhere; ambiguous everyday words only inside the Skills section */
+  const skills = SKILL_WORDS.filter(s => hasWord(low, s));
+  if(skillsText) AMBIGUOUS_SKILLS.forEach(s => { if(hasWord(skillsText.toLowerCase(), s)) skills.push(s); });
+  /* years of experience: month-name and bare-year ranges, earliest start to latest end */
+  const MON = "(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+  const rangeRe = new RegExp(MON+"?\\.?\\s*(19|20)\\d{2}\\s*(?:-|–|—|to)\\s*(?:"+MON+"?\\.?\\s*(?:(19|20)\\d{2}|present|current|now))", "gi");
+  let earliest = null, latest = null;
+  while((m = rangeRe.exec(clean)) !== null){
+    const ys = m[0].match(/(19|20)\d{2}/g);
+    if(ys){ const a = parseInt(ys[0],10); if(earliest===null || a<earliest) earliest = a; }
+    if(/present|current|now/i.test(m[0])) latest = new Date().getFullYear();
+    else if(ys && ys.length>1){ const b = parseInt(ys[ys.length-1],10); if(latest===null || b>latest) latest = b; }
   }
+  let yearsExp = "";
+  if(earliest !== null && latest !== null && latest >= earliest) yearsExp = String(latest - earliest);
+  /* industries: strong sources (name block, summary, skills, employers, titles) decide;
+     experience-bullet mentions need at least two distinct keyword hits, so one incidental
+     word ("hospitals" in an engineer's bullet) never spawns a sector lane */
+  const strongText = [secText("preamble"), summaryText, skillsText, employers.join("\n"), heldTitles.join("\n")].join("\n").toLowerCase();
+  const weakLow = expText.toLowerCase();
+  const industries = Object.keys(INDUSTRY_WORDS).filter(ind => {
+    const kws = INDUSTRY_WORDS[ind];
+    if(kws.some(w => hasWord(strongText, w))) return true;
+    return kws.filter(w => hasWord(weakLow, w)).length >= 2;
+  });
   return {
     skills: uniq(skills).slice(0, 40),
     employers: employers.slice(0, 15),
-    titles: foundTitles.slice(0, 12),
+    titles: heldTitles.slice(0, 12),
     industries: industries,
     years_experience: yearsExp,
     summary: ""
@@ -462,9 +532,11 @@ async function extractFileText(file){
 /* ---------- wide coverage generation ---------- */
 const SENIORITY = ["", "Senior ", "Lead ", "Principal ", "Staff "];
 const ROLE_FAMILIES = [
+  { keys:["nurse","nursing"], family:["Nurse","Registered Nurse","ICU Nurse","ER Nurse","Charge Nurse","Clinical Nurse","Staff Nurse","Telemetry Nurse","Critical Care Nurse","Nurse Practitioner"] },
   { keys:["analyst"], family:["Analyst","Business Analyst","Systems Analyst","Data Analyst","Business Systems Analyst","Functional Analyst","Reporting Analyst"] },
+  { keys:["marketing"], family:["Marketing Manager","Digital Marketing Manager","Brand Manager","Content Marketing Manager","Demand Generation Manager","Product Marketing Manager","Growth Marketing Manager","Campaign Manager","Marketing Specialist","Marketing Director"] },
   { keys:["architect"], family:["Architect","Solutions Architect","Enterprise Architect","Cloud Architect","Infrastructure Architect","Application Architect","Technical Architect"] },
-  { keys:["engineer"], family:["Engineer","Cloud Engineer","Systems Engineer","Infrastructure Engineer","Platform Engineer","Support Engineer","DevOps Engineer"] },
+  { keys:["engineer"], family:["Engineer","Mechanical Engineer","Design Engineer","Manufacturing Engineer","Project Engineer","Systems Engineer","Cloud Engineer","Infrastructure Engineer","Platform Engineer","Support Engineer","DevOps Engineer"] },
   { keys:["designer"], family:["Designer","Product Designer","UX Designer","UI Designer","Interaction Designer","Visual Designer"] },
   { keys:["manager"], family:["Manager","Program Manager","Project Manager","Product Manager","Operations Manager","Delivery Manager"] },
   { keys:["developer"], family:["Developer","Software Developer","Application Developer","Full Stack Developer","Web Developer"] },
@@ -473,34 +545,49 @@ const ROLE_FAMILIES = [
   { keys:["specialist"], family:["Specialist","Technical Specialist","Implementation Specialist","Support Specialist","Operations Specialist"] },
   { keys:["scientist"], family:["Scientist","Data Scientist","Research Scientist","Applied Scientist"] },
   { keys:["technician"], family:["Technician","Support Technician","Field Technician","Systems Technician"] },
-  { keys:["coordinator"], family:["Coordinator","Program Coordinator","Project Coordinator","Operations Coordinator"] }
+  { keys:["coordinator"], family:["Coordinator","Program Coordinator","Project Coordinator","Operations Coordinator"] },
+  { keys:["therapist"], family:["Therapist","Physical Therapist","Occupational Therapist","Respiratory Therapist","Speech Therapist"] }
 ];
+function familyForTitle(title){
+  const low = String(title||"").toLowerCase();
+  for(const rf of ROLE_FAMILIES){ if(rf.keys.some(k => low.includes(k))) return rf.family; }
+  /* fall back: a family whose forms end in the title's own head word (e.g. "Underwriter" -> no match, "Care Coordinator" -> coordinator) */
+  const words = low.split(/[^a-z]+/).filter(Boolean);
+  const head = words[words.length-1];
+  if(head){ for(const rf of ROLE_FAMILIES){ if(rf.family.some(f => f.toLowerCase().split(" ").pop() === head)) return rf.family; } }
+  return null;
+}
 function generateTitles(specifiedTitle, detection){
   const title = String(specifiedTitle||"").trim();
-  const low = title.toLowerCase();
-  let family = null;
-  for(const rf of ROLE_FAMILIES){ if(rf.keys.some(k => low.includes(k))){ family = rf.family; break; } }
-  const domainWords = [];
-  low.replace(/senior|lead|principal|staff|sr\.?|jr\.?/g," ").split(/[^a-z]+/).filter(w => w.length>2)
-     .forEach(w => { if(!["the","and","for","with"].includes(w)) domainWords.push(w); });
-  const domain = domainWords.map(w => w[0].toUpperCase()+w.slice(1)).join(" ");
+  const family = familyForTitle(title);
+  const headWord = title.toLowerCase().split(/[^a-z]+/).filter(Boolean).pop() || "";
   let out = [];
   if(title) out.push(title);
   if(family){
     family.forEach(f => {
-      const composed = (domain && !f.toLowerCase().includes(domain.toLowerCase().split(" ")[0]||"~~~"))
-        ? (domain + " " + f) : f;
+      /* a bare head noun ("Analyst") IS the specified title once its domain word is on it —
+         composing domain + family blindly produced "Data Analyst Analyst" */
+      const composed = (f.split(" ").length === 1 && f.toLowerCase() === headWord) ? title : f;
       SENIORITY.forEach(p => out.push(p + composed));
     });
   }
-  /* fold in titles the resume actually held + skill-flavored variants */
+  /* fold in the titles the resume actually held */
   (detection.titles||[]).forEach(t => out.push(t));
-  (detection.skills||[]).slice(0,6).forEach(s => { if(family) out.push(s + " " + family[0]); });
-  out = uniq(out).filter(t => t.length >= 3 && t.length <= 60);
+  if(!family){
+    /* no known family: seniority variants of the title itself, plus the families of titles actually held */
+    SENIORITY.forEach(p => { if(p && title) out.push(p + title); });
+    (detection.titles||[]).forEach(t => {
+      const hf = familyForTitle(t);
+      if(hf) hf.forEach(f => SENIORITY.forEach(p => out.push(p + f)));
+    });
+  }
+  const tidy = arr => uniq(arr.map(t => t.replace(/\b(\w+)(\s+\1\b)+/gi, "$1")))
+    .filter(t => t.length >= 3 && t.length <= 60);
+  out = tidy(out);
   if(out.length < 20 && family){
     /* widen: bare family forms at every seniority level */
     family.forEach(f => SENIORITY.forEach(p => out.push(p + f)));
-    out = uniq(out);
+    out = tidy(out);
   }
   return out.slice(0, 35);
 }
@@ -538,8 +625,10 @@ async function generateCoverage(specifiedTitle){
   let lanes = generateLanes(det, STORE.profile.employers.target || []);
   let widened = false;
   if(titles.length < 20 || lanes.length < 9){
-    /* automatic widening pass: broader seniority sweep + skill families */
-    const extra = generateTitles(specifiedTitle + " Specialist", det);
+    /* automatic widening pass: generate from every title the resume actually held —
+       real held titles widen the set without inventing roles */
+    let extra = [];
+    (det.titles||[]).forEach(t => { extra = extra.concat(generateTitles(t, det)); });
     titles = uniq(titles.concat(extra)).slice(0, 35);
     widened = true;
   }
