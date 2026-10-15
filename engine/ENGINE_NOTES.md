@@ -72,8 +72,13 @@ consistent.
 - `coverage.saved.titles` / `coverage.saved.lanes` — the only coverage the
   engine uses (drafts are ignored, matching "runs work from your saved
   coverage only").
-- `profile.employers.excluded` — skipped silently.
-- `rules.remote_only`, `rules.minimum_pay`, `rules.always_reject`.
+- `profile.employers.excluded` — recorded as a rejected disposition
+  (gate fact; see Evaluation below).
+- `rules.remote_only`, `rules.minimum_pay`, `rules.maximum_pay`,
+  `rules.posting_max_age_days`, `rules.block_hands_on`,
+  `rules.block_presales`, `rules.always_reject`. Missing fields fall back
+  to the sweep defaults: no ceiling, 7-day window, hands-on bar on,
+  pre-sales bar off.
 - **`connections.json` is never read.** `codes.json` and `answers.json` are
   never touched. No secrets are read, printed, or needed.
 
@@ -101,12 +106,59 @@ consistent.
 
 ### Engine writes into `filings.json`
 
-New entries only, appended; deduped by `company + role + url` against all
-existing filings and within the run. Entry shape matches `renderFilings` /
-`saveFiling` exactly: `{ id ("fil-…"), company, role, where, status, filed_at,
-date, reason, url, check: { verdict, rules: [{ rule, status, evidence }] } }`.
+New entries only, appended; deduped by **employer + title identity**
+(normalized — case/punctuation/whitespace collapsed) against all existing
+filings and within the run: the same role re-posted under a new URL or
+route is the same lead and is never dispositioned twice. Entry shape
+matches `renderFilings` / `saveFiling` exactly: `{ id ("fil-…"), company,
+role, where, status, filed_at, date, reason, url, posted_at?, category?
+(rejected only), check: { verdict, rules: [{ rule, status, evidence }] } }`.
 `date` is `filed_at.slice(0,10)` (UTC), which is what the page's
 `filingsToday()` actually compares.
+
+### Evaluation — the sweep discipline (2026-10-15)
+
+The engine evaluates exactly the way the Sweep Tracker's sweep does:
+
+- **JD-first.** No verdict from a title or snippet: the full posting text
+  is loaded before judging. A posting whose full text cannot be loaded is
+  **not evaluated** — no disposition is recorded; the run's closeout
+  activity line counts it ("N not evaluated").
+- **Every screened posting is dispositioned exactly once** — `parked`
+  (ready to apply) or `rejected` with a machine `category`
+  (`not-remote`, `pay-outside-band`, `stale-posting`, `hands-on-duties`,
+  `pre-sales`, `experience-mismatch`, `employer-excluded`,
+  `always-reject`) and a human `reason`.
+- **The secondary check** rides on every disposition: the 13 rules in
+  canonical order (`full JD read`, `experience alignment`,
+  `duplicate check`, `employer exclusions`, `100% remote US`, `pay band`,
+  `posting freshness`, `tailored resume`, `veteran answer`,
+  `screening answers`, `pre-sales bar`, `filing proof`,
+  `hands-on duties`), each `pass | fail | grey` with evidence quoted
+  from the posting. Filing-stage rules are honest greys at evaluation
+  time; the page completes them (attested) when the user marks a lead
+  filed.
+- **Gate facts reject on sight** — excluded employer and always-reject
+  terms are the posting-intrinsic exception: no JD is opened for an
+  excluded employer, and the check says so.
+- **Pay band:** the TOP of a published range must sit between
+  `minimum_pay` and `maximum_pay`; unpublished pay is always eligible.
+- **Remote language:** "fully remote" / "remote or hybrid" / "work from
+  anywhere" are eligible; a stated required office/hybrid schedule
+  rejects, quoting the sentence; non-US-restricted locations reject.
+- **Freshness:** postings older than `posting_max_age_days` reject;
+  boards that publish no date are dated from discovery.
+- **Hands-on / pre-sales:** whole-role tests with quoted duties — a
+  percentage-of-time coding role, a quota-carrying role — never a
+  keyword brush.
+- **Experience alignment:** the posting's named skill requirements vs
+  the résumé (detection skills + full text); a core mismatch fails only
+  when 3+ skills are required and the résumé covers none.
+- **Workarounds before a judgment reject stands:** a reject judged from
+  an aggregator feed (RemoteOK / Arbeitnow) is re-judged against the
+  employer's own ATS board copy of the same role when one exists — the
+  board text governs, and the check gains a `workarounds tried` entry
+  either way.
 
 ### Engine appends into `activity.json`
 
