@@ -137,6 +137,10 @@
   }
 
 .livepill{display:inline-flex;align-items:center}
+.dsec{margin-top:44px}
+.liveprog{height:3px;width:38%;background:var(--accent);animation:liveprogmove 1.7s ease-in-out infinite alternate}
+@keyframes liveprogmove{from{transform:translateX(-60%)}to{transform:translateX(230%)}}
+
 .livedot{width:8px;height:8px;border-radius:50%;background:#6c4bd8;display:inline-block;margin-right:6px;animation:livepulse 1.6s infinite}
 @keyframes livepulse{0%{opacity:1}50%{opacity:.25}100%{opacity:1}}
 .srcrow{display:grid;grid-template-columns:170px 1fr 92px;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid #eae4d6;cursor:pointer}
@@ -1376,40 +1380,84 @@ function renderDashboard(){
   const hasFieldLane = !fieldStem || (saved.lanes||[]).some(l => l.kind === "sector" && l.name.toLowerCase().includes(fieldStem));
   const staleCoverage = !!(fieldStem && (saved.titles||[]).length && !hasFieldLane);
 
-  /* NOW SEARCHING pill — only while the hunt engine is genuinely live (reported within 15 min) */
+  /* live state — only while the hunt engine genuinely reported within 15 minutes */
   const engineFresh = !!(runs.state === "running" && cur && cur.engine_updated_at &&
     (Date.now() - new Date(cur.engine_updated_at).getTime()) < 15*60*1000);
-  const searchingLanes = engineFresh? (cur.lanes||[]).filter(l => l.status === "searching").map(l => l.name) : [];
-  const livePill = engineFresh
-    ? '<span class="pill violet livepill"><span class="livedot"></span>NOW SEARCHING' +
-      (searchingLanes.length? " — "+esc(searchingLanes.slice(0,2).join(", "))+(searchingLanes.length>2? " +"+(searchingLanes.length-2)+" more":"") : "") + '</span>'
-    : "";
-
-  const pillRow = list => {
-    const map = {};
-    list.forEach(f => { const s = f.where || "Not noted"; map[s] = (map[s]||0)+1; });
-    const entries = Object.entries(map).sort((a,b) => b[1]-a[1]);
-    if(!entries.length) return '<span class="pill grey">none yet today</span>';
-    let h = entries.slice(0,3).map(([k,v]) => '<span class="pill grey">'+esc(k)+' · '+v+'</span>').join(" ");
-    const rest = entries.slice(3).reduce((a,[,v]) => a+v, 0);
-    if(rest) h += ' <span class="pill grey">All other · '+rest+'</span>';
-    return h;
+  const engineStale = !!(runs.state === "running" && cur && !engineFresh);
+  const searchingLanes = engineFresh? (cur.lanes||[]).filter(l => l.status === "searching") : [];
+  const fmtElapsed = iso => {
+    if(!iso) return "";
+    let ms = Date.now() - new Date(iso).getTime(); if(ms < 0) ms = 0;
+    const m = Math.floor(ms/60000), h = Math.floor(m/60);
+    return h? h+"h "+(m%60)+"m" : m+"m";
   };
-  const countCard = (label, n, pillCls, pillsHtml) => {
-    /* tracker-style ring gauge: the arc fills to this metric's true share of Evaluated */
+
+  /* NOW SEARCHING row — the tracker format: small label + frosted pill naming what is being searched */
+  const nowSearching = engineFresh? `
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px">
+    <span class="label" style="margin:0">Now searching</span>
+    <span class="pill violet livepill" style="font-size:13.5px;padding:9px 16px"><span class="livedot"></span><b>${esc(searchingLanes.length? searchingLanes[0].name : "Hunt engine")}</b>&nbsp;· ${searchingLanes.length > 1? searchingLanes.length+" lanes searching · " : ""}${saved.titles.length} titles in this hunt</span>
+  </div>` : "";
+  const runLine = cur && cur.started_at? `<p class="sub small" style="margin-top:12px">This run · Started ${esc(fmtDateTime(cur.started_at))} · ${esc(fmtElapsed(cur.started_at))} total</p>` : "";
+  const staleNote = engineStale? '<p class="sub" style="margin-top:8px;color:var(--amber-ink)">No update in over 15 minutes — this run may be stalled.</p>' : "";
+
+  /* LIVE HUNT panel — the tracker's live browser panel, fed by the engine's real reports */
+  const freshFiling = todays.filter(f => f.status === "filed" && f.filed_at && (Date.now() - new Date(f.filed_at).getTime()) < 15*60*1000)
+    .sort((a,b) => new Date(b.filed_at) - new Date(a.filed_at))[0];
+  const acts = [];
+  if(engineFresh && freshFiling) acts.push({ title:"Filing — "+freshFiling.company+" · "+freshFiling.role, line:"Filing an application — "+(freshFiling.where || "Job board")+" · "+freshFiling.company+" — "+freshFiling.role });
+  if(engineFresh) searchingLanes.forEach(l => acts.push({ title:l.name+" — searching", line:"Searching — "+l.name+(l.detail? " · "+l.detail : "") }));
+  const latestAct = (STORE.activity.entries || [])[0];
+  const livePanel = `
+  <h2 class="dashh dsec">Live hunt</h2>
+  <div class="card" style="margin-top:10px;padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;gap:10px;background:#EFE9DA;padding:12px 16px">
+      <span style="display:inline-flex;gap:7px"><i style="width:11px;height:11px;border-radius:50%;background:#E0655F;display:inline-block"></i><i style="width:11px;height:11px;border-radius:50%;background:#E3B34E;display:inline-block"></i><i style="width:11px;height:11px;border-radius:50%;background:#7FB069;display:inline-block"></i></span>
+      <span class="pill" style="background:#fff">${esc(engineFresh? (searchingLanes.length? searchingLanes[0].name+" search" : "Hunt engine") : "Hunt engine")}</span>
+      <span style="flex:1"></span>
+      ${engineFresh? '<span class="pill" style="background:#D64545;color:#fff">● LIVE</span>' : '<span class="pill grey">IDLE</span>'}
+    </div>
+    <div style="height:3px;background:#EFE8D8;overflow:hidden">${engineFresh? '<div class="liveprog"></div>' : ""}</div>
+    <div style="padding:20px 22px">
+      <p class="label">Now viewing</p>
+      <p style="font-size:19px;font-weight:700;margin:2px 0 0">${esc(engineFresh? (acts.length? acts[0].title : "Hunt engine — running") : "Working now")}</p>
+      ${engineFresh && acts.length? `<p class="sub" style="margin-top:12px"><b style="color:var(--ink)">Doing right now:</b> ${esc(acts[0].line)}</p>
+      <p class="sub small" style="margin-top:6px">${acts.length > 1? "Also happening right now: "+esc(acts.slice(1).map(a => a.title).join(" · ")) : "Nothing else happening right now — only the work above is in progress at this moment."}</p>` :
+      engineFresh? '<p class="sub" style="margin-top:12px">The engine is running — its next report will appear here as it works.</p>' :
+      '<p class="sub" style="margin-top:12px">The hunt is idle right now. When a run starts, this panel shows what it is viewing and searching, as it happens.</p>'}
+      ${latestAct? `<p class="sub small" style="margin-top:14px"><span class="label" style="margin:0">Latest from the hunt</span> · ${esc(fmtDateTime(latestAct.at))} — ${esc(String(latestAct.message||"").length > 190? String(latestAct.message).slice(0,190)+"…" : String(latestAct.message||""))}</p>` : ""}
+      ${engineFresh && saved.titles.length? `<p class="label" style="margin-top:16px">Searching these titles now</p><div>${saved.titles.slice(0,8).map(t => '<span class="pill violet" style="margin:0 6px 6px 0">'+esc(t)+'</span>').join("")}${saved.titles.length > 8? '<span class="pill grey">+'+(saved.titles.length-8)+' more</span>' : ""}</div>` : ""}
+      <p class="sub small" style="margin-top:16px">Updated ${esc(fmtDateTime(STORE_LOADED_AT))} · refreshes with the page every minute</p>
+    </div>
+  </div>`;
+
+  /* TODAY — tracker format: filed-by-source pills above centered ring-gauge cards, label under each gauge */
+  const srcToday = {};
+  todays.filter(f => f.status === "filed").forEach(f => { const s = f.where || "Not noted"; srcToday[s] = (srcToday[s]||0)+1; });
+  const srcPills = Object.entries(srcToday).sort((a,b) => b[1]-a[1]);
+  const srcPillsRow = srcPills.length? `<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:0 0 14px">${srcPills.map(([k,v]) => '<span class="pill green">'+esc(k)+' · '+v+'</span>').join("")}</div>` : "";
+  const countCard = (label, n, tone) => {
     const pct = label === "Evaluated"? 100 : (evaluated > 0? Math.round(n / evaluated * 100) : 0);
-    const rc = { green:"var(--green)", amber:"var(--amber)", red:"var(--red)", violet:"var(--accent)" }[pillCls] || "var(--accent)";
+    const rc = { green:"var(--green)", amber:"var(--amber)", red:"var(--red)", violet:"var(--accent)" }[tone] || "var(--accent)";
     return `
     <div class="card" style="text-align:center;margin:0">
-      <p class="label">${label}</p>
-      <div style="width:104px;height:104px;margin:6px auto;border-radius:50%;background:conic-gradient(${rc} ${pct}%, #EFE8D8 ${pct}%);display:flex;align-items:center;justify-content:center">
+      <div style="width:104px;height:104px;margin:2px auto 0;border-radius:50%;background:conic-gradient(${rc} ${pct}%, #EFE8D8 ${pct}%);display:flex;align-items:center;justify-content:center">
         <div style="width:86px;height:86px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center">
           <span class="big">${n}</span>
         </div>
       </div>
-      <div>${pillsHtml}</div>
+      <div style="font-size:15.5px;font-weight:600;color:var(--ink2);margin-top:4px">${label}</div>
     </div>`;
   };
+
+  /* this run totals line */
+  let runTotals = "";
+  if(cur && cur.started_at){
+    const rf = (STORE.filings.filings || []).filter(f => f.filed_at && f.filed_at >= cur.started_at);
+    const rc2 = { filed:0, parked:0, rejected:0 };
+    rf.forEach(f => { if(rc2[f.status] != null) rc2[f.status]++; });
+    runTotals = `<p class="sub" style="text-align:center;margin-top:24px">This run — Filed ${rc2.filed} · Evaluated ${rf.length + ((cur.evaluated_extra)||0)} · Parked ${rc2.parked} · Rejected ${rc2.rejected}</p>`;
+  }
 
   /* stages — engine-reported when present, derived from run state otherwise */
   const stageDefs = [
@@ -1463,26 +1511,33 @@ function renderDashboard(){
   <div class="flexbetween">
     <div>
       <h2 class="dashh">Your job hunt</h2>
-      <p class="sub" style="margin:4px 0 0">${esc(todayStr())} · ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? " · coverage saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}</p>
+      <p class="sub" style="margin:4px 0 0">${esc(todayStr())} · ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? " · coverage saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""} · Updated ${esc(fmtDateTime(STORE_LOADED_AT))}</p>
     </div>
-    <div style="text-align:right">
-      ${livePill}
-      <div class="mt">${runs.state === "running"
+    <div>${runs.state === "running"
         ? '<button class="btn danger" id="btnStopRun">Stop</button>'
         : '<button class="btn" id="btnStartRun">Start run</button>'}</div>
-    </div>
   </div>
-  <p class="label mt">Today · ${esc(todayStr())}</p>
+  ${nowSearching}
+  ${runLine}
+  ${staleNote}
+  ${livePanel}
+  <h2 class="dashh dsec">Today · ${esc(todayStr())}</h2>
+  ${srcPillsRow}
   <div class="grid4">
-    ${countCard("Filed", counts.filed, "green", pillRow(todays.filter(f => f.status === "filed")))}
-    ${countCard("Parked", counts.parked, "amber", pillRow(todays.filter(f => f.status === "parked")))}
-    ${countCard("Rejected", counts.rejected, "red", pillRow(todays.filter(f => f.status === "rejected")))}
-    ${countCard("Evaluated", evaluated, "violet", '<span class="pill violet">postings checked</span>')}
+    ${countCard("Evaluated", evaluated, "violet")}
+    ${countCard("Filed", counts.filed, "green")}
+    ${countCard("Parked", counts.parked, "amber")}
+    ${countCard("Rejected", counts.rejected, "red")}
   </div>
   <div class="card mt">
-    <p class="label">Hunt run</p>
-    <b>${runs.state === "running"? "Run in progress" : runs.state === "stopped"? "Stopped" : "Idle"}</b>
-    <span class="sub small">${cur? " · started "+esc(fmtDateTime(cur.started_at)) : ""}</span>
+    <p class="label">Filings by source</p>
+    ${srcRows || '<p class="sub">No filings yet — sources appear here as applications and leads are recorded.</p>'}
+  </div>
+  <div id="filingsBox" class="mt"></div>
+  ${runTotals}
+  <h2 class="dashh dsec">Step by step</h2>
+  <p class="sub" style="margin:-2px 0 12px;max-width:640px">What happened at each step of this run — finished steps first, then the steps live now, then the steps still waiting.</p>
+  <div class="card" style="margin-top:0">
     ${stages}
     <p class="sub small">Runs work from your saved coverage only — ${saved.titles.length} titles across ${saved.lanes.length} lanes${STORE.coverage.coverage_saved_at? ", saved "+esc(fmtDate(STORE.coverage.coverage_saved_at)) : ""}.</p>
   </div>
@@ -1494,19 +1549,15 @@ function renderDashboard(){
         ? '<p class="sub">Installed in your repo ✓ — pressing <b>Start run</b> dispatches it, and it writes real progress back to this page as it searches. Matched postings land under Parked as ready-to-apply leads; the engine never pretends an application was filed.</p><div class="mt"><button class="btn ghost small" id="btnInstallEngine">Reinstall / update engine</button></div>'
         : '<p class="sub">Checking your repo for the engine… reload the page if this persists.</p>'}
   </div>
-  <div class="card mt">
-    <p class="label">Filings by source</p>
-    ${srcRows || '<p class="sub">No filings yet — sources appear here as applications and leads are recorded.</p>'}
-  </div>
-  <div id="filingsBox" class="mt"></div>
-  <p class="label">Search coverage</p>
+  <h2 class="dashh dsec">Search coverage</h2>
   <div id="laneGrid" class="grid3">${laneCards || '<div class="card" style="margin:0"><p class="sub">No saved coverage yet. <a href="#" id="lnkMakeCoverage">Generate &amp; save coverage →</a></p></div>'}</div>
   <div id="lanePanel"></div>
   <div class="card mt">
     <div class="flexbetween">
-      <p class="label" style="margin:0">Titles in this hunt (${saved.titles.length})</p>
+      <h2 class="dashh" style="margin:0">Titles searched</h2>
       <div><button class="btn ghost small" id="btnEditCoverage">Edit coverage</button> <button class="btn ghost small" id="btnRegenCoverage">Regenerate titles &amp; lanes</button></div>
     </div>
+    <p class="sub small" style="margin-top:6px">${saved.titles.length} titles in this hunt</p>
     <details class="fold"><summary>Show all titles</summary>
       <div>${saved.titles.map(t=>'<span class="chip">'+esc(t)+'</span>').join("") || '<span class="sub">None saved yet.</span>'}</div>
     </details>
@@ -1514,7 +1565,7 @@ function renderDashboard(){
   </div>
   <div id="dashDraftBox" class="mt"></div>
   <div class="card mt">
-    <p class="label">Your rules</p>
+    <h2 class="dashh" style="margin:0 0 8px">Rules</h2>
     <div id="rulesBox">${rulesHTML()}</div>
   </div>
   <div class="grid2 mt">
@@ -1570,6 +1621,7 @@ function renderDashboard(){
   renderSettings();
   startDashPoll();
 }
+
 function laneProgress(lane){
   const runs = STORE.runs;
   const entry = ((runs.current_run && runs.current_run.lanes) || []).find(x => x.name === lane.name);
