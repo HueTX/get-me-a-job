@@ -1146,14 +1146,13 @@ function collect4(){ const t = $("#wTitle"); if(t) STORE.coverage.specified_titl
 function wizStep5(){
   const li = STORE.connections.linkedin;
   wizShell(5, `
-    <div class="notice info"><b>How LinkedIn connect works:</b> LinkedIn keeps its sign-in on its own page — this app never asks for,
-    sees, or stores your LinkedIn password. Use the button to sign in with LinkedIn in a new tab; your browser stays signed in there,
-    and that same signed-in browser is what applications run in.</div>
-    <div class="mt"><button class="btn" id="btnLiSignIn" type="button">Sign in with LinkedIn</button>
-      <span class="sub small">Opens linkedin.com — sign in there, then come back to this tab.</span></div>
+    <div class="notice info"><b>LinkedIn connect is just your profile URL.</b> No app registration, no password here: LinkedIn keeps
+    its sign-in on its own page and your browser stays signed in there. Paste your URL below, switch on Connected, done.</div>
+    <div class="mt"><button class="btn ghost" id="btnLiSignIn" type="button">Open LinkedIn</button>
+      <span class="sub small">Check you are signed in there, then come back to this tab.</span></div>
     <label class="f">LinkedIn profile URL</label>
     <input type="url" id="wLiUrl" value="${esc(li.profile_url)}" placeholder="https://www.linkedin.com/in/your-name">
-    <div class="toggle"><div><b>Connected with LinkedIn</b><div class="sub small">Switch on once you have signed in with LinkedIn in this browser.</div></div>
+    <div class="toggle"><div><b>Connected with LinkedIn</b><div class="sub small">On means this profile is linked — applications run in the browser session you signed in with.</div></div>
       <label class="switch"><input type="checkbox" id="wLiConn" ${li.connected? "checked":""}><span class="slider"></span></label></div>`);
   const b = $("#btnLiSignIn");
   if(b) b.addEventListener("click", () => {
@@ -1168,10 +1167,9 @@ function wizStep6(){
   const liveHere = !!(mb.connected && tok && tok.provider === mb.provider);
   const appUrl = esc((location.origin || "") + (location.pathname || ""));
   wizShell(6, `
-    <div class="notice info"><b>Why a mailbox:</b> job sites email one-time sign-in codes and password-reset links.
-    Connect yours <b>with the provider</b> — Google or Microsoft run the sign-in on their own page; your email password is
-    never typed here and never stored. After that, codes are <b>fetched automatically</b> into your dashboard's Code Inbox —
-    nobody pastes anything.</div>
+    <div class="notice info"><b>One click, no setup:</b> job sites email one-time codes and password-reset links, so the app pulls them
+    from your mailbox automatically. Pick your provider, click <b>Connect mailbox</b> — Google or Microsoft run the sign-in on their own
+    page; your email password is never typed here and never stored. Codes land in your dashboard's Code Inbox by themselves.</div>
     <label class="f">Provider</label>
     <select id="wMbProvider">
       <option value="" ${mb.provider===""?"selected":""}>Choose…</option>
@@ -1181,6 +1179,7 @@ function wizStep6(){
     </select>
     <label class="f">Mailbox email address</label>
     <input type="email" id="wMbEmail" value="${esc(mb.email)}" placeholder="you@example.com">
+    <details class="mt" id="mbAdvanced"><summary class="sub" style="cursor:pointer"><b>Advanced — use my own app registration</b> (most people skip this; the built-in registration covers Connect)</summary>
     <div id="mbSetupGmail">
       <details><summary class="sub" style="cursor:pointer"><b>One-time Gmail setup (free, about 5 minutes)</b> — the app needs your own Google app registration so Google lets it read your mail with your permission</summary>
       <ol class="sub" style="line-height:1.6;margin:8px 0 0;padding-left:20px">
@@ -1194,13 +1193,15 @@ function wizStep6(){
     <div id="mbSetupOutlook">
       <details><summary class="sub" style="cursor:pointer"><b>One-time Outlook setup (free, about 5 minutes)</b> — the app needs your own Microsoft app registration so Microsoft lets it read your mail with your permission</summary>
       <ol class="sub" style="line-height:1.6;margin:8px 0 0;padding-left:20px">
-        <li>Open <span class="mono">portal.azure.com</span> → App registrations → New registration (any name; account type: personal Microsoft accounts).</li>
+        <li>Open <span class="mono">portal.azure.com</span> → App registrations → New registration → Supported account types: <b>Accounts in any organizational directory and personal Microsoft accounts</b> — this exact choice. A “personal accounts only” registration lands in the Microsoft Services tenant and rejects your own outlook.com sign-in at the picker.</li>
         <li>Platform: <b>Single-page application</b> → Redirect URI: <span class="mono">${appUrl}</span> → Register.</li>
         <li>Copy the <b>Application (client) ID</b> from the overview page and paste it below — it identifies your app registration; it is not a password.</li>
       </ol></details>
     </div>
-    <label class="f">Client ID from your provider app registration</label>
-    <input type="text" id="wMbClientId" value="${esc(mb.client_id||"")}" placeholder="Paste the client ID from the one-time setup above">
+    <label class="f">Client ID from your own app registration (optional)</label>
+    <input type="text" id="wMbClientId" value="${esc(mb.client_id||"")}" placeholder="Only needed with your own registration — otherwise leave blank">
+    </details>
+    <p class="sub small mt">${mailClientId(mb.provider)? "Ready — Connect opens your provider's own sign-in page. No setup needed." : "No sign-in registration found for the selected provider yet — the publisher's shared one, or yours under Advanced."}</p>
     <div class="mt"><button class="btn" id="btnMbConnect" type="button">${liveHere? "Reconnect mailbox" : "Connect mailbox"}</button>
       <span class="sub small" id="mbConnState">${mb.connected? "Connected"+(mb.email? " as "+esc(mb.email) : "")+(mb.last_checked_at? " · last code check "+esc(fmtDateTime(mb.last_checked_at)) : "") : "Not connected yet."}</span></div>
     <p class="sub small mt">Sign-in tokens stay in this browser only (the same rule as your GitHub token) — never in your repo. If a token expires, reconnecting is one click. Automatic fetching supports Gmail and Outlook; other providers keep a manual fallback in the Code Inbox.</p>`);
@@ -1793,6 +1794,15 @@ function mailTokenLoad(){
 }
 function mailTokenSave(t){ try{ localStorage.setItem(mailKey(), JSON.stringify(t)); }catch(e){} }
 function mailTokenClear(){ try{ localStorage.removeItem(mailKey()); }catch(e){} }
+/* Publisher-provided shared app registrations: filled in ONCE by whoever publishes the app,
+   after which every user's Connect is a single click — no per-user app registration.
+   Client IDs are public identifiers, not secrets. A user's own client ID always wins. */
+const SHARED_MAIL_CLIENT_IDS = { Gmail: "", Outlook: "" };
+function mailClientId(provider){
+  const mb = STORE.connections.mailbox;
+  const own = (mb && mb.provider === provider)? (mb.client_id || "") : "";
+  return (own || SHARED_MAIL_CLIENT_IDS[provider] || "").trim();
+}
 function mailTokenValid(){
   const t = mailTokenLoad();
   if(!t || !t.provider) return null;
@@ -1876,7 +1886,7 @@ async function connectOutlook(clientId){
 }
 async function outlookToken(){
   const mb = STORE.connections.mailbox;
-  const app = await ensureMsal(mb.client_id);
+  const app = await ensureMsal(mailClientId(mb.provider));
   const account = app.getActiveAccount() || app.getAllAccounts()[0];
   if(!account) throw new Error("Outlook session expired — reconnect your mailbox from the Code Inbox.");
   try{ const r = await app.acquireTokenSilent({ scopes:["Mail.Read"], account: account }); return r.accessToken; }
@@ -1890,9 +1900,10 @@ async function connectMailbox(){
   const mb = STORE.connections.mailbox;
   if(!mb.provider) throw new Error("Choose your provider first.");
   if(mb.provider === "Other") throw new Error("Automatic code fetching supports Gmail and Outlook. Other mailboxes keep the manual fallback in the Code Inbox.");
-  if(!mb.client_id) throw new Error("Paste your provider app's client ID first — it comes from the free one-time setup above.");
-  if(mb.provider === "Gmail") return connectGmail(mb.client_id);
-  if(mb.provider === "Outlook") return connectOutlook(mb.client_id);
+  const cid = mailClientId(mb.provider);
+  if(!cid) throw new Error("Mailbox sign-in is not set up for this copy of the app yet: it carries no shared mail registration, and you have not pasted your own client ID under Advanced in setup step 6.");
+  if(mb.provider === "Gmail") return connectGmail(cid);
+  if(mb.provider === "Outlook") return connectOutlook(cid);
   throw new Error("Unknown provider: " + mb.provider);
 }
 /* --- code extraction + fetching --- */
@@ -1950,7 +1961,7 @@ async function fetchMailboxCodes(opts){
   if(mb.provider === "Gmail"){
     let tok = mailTokenValid();
     if(!tok || tok.provider !== "Gmail"){
-      try{ await reauthGmail(mb.client_id); tok = mailTokenValid(); }
+      try{ await reauthGmail(mailClientId(mb.provider)); tok = mailTokenValid(); }
       catch(e){ return { added: 0, reason: "reauth" }; }
     }
     if(!tok) return { added: 0, reason: "reauth" };
