@@ -399,10 +399,31 @@ const CURATED_SLUGS = {
   "figma": "figma", "asana": "asana", "dropbox": "dropbox",
   "hubspot": "hubspot", "zendesk": "zendesk",
 };
+/* Users often paste career-site URLs instead of employer names
+   ("https://careers.unitedhealthgroup.com", "https://caresource.wd1.
+   myworkdayjobs.com"). Reduce such an entry to its brand token —
+   unitedhealthgroup, caresource — so board slugs can still resolve;
+   a plain employer name returns "" and keeps the normal path. */
+function employerBrandToken(raw) {
+  let s = String(raw || "").trim().toLowerCase();
+  if (!s) return "";
+  const looksLikeHost = /^[a-z]+:\/\//.test(s) || (/\.[a-z]{2,}(\/|$)/.test(s) && !/\s/.test(s));
+  if (!looksLikeHost) return "";
+  s = s.replace(/^[a-z]+:\/\//, "").split("/")[0].split("?")[0];
+  const labels = s.split(".").filter(Boolean);
+  while (labels.length > 1 && ["www", "careers", "career", "jobs", "job", "apply", "hire", "hiring", "recruiting"].includes(labels[0])) labels.shift();
+  if (!labels.length) return "";
+  const platformTail = labels.slice(-2).join(".");
+  if (["myworkdayjobs.com", "workday.com", "icims.com", "taleo.net", "successfactors.com", "ultipro.com", "adp.com"].includes(platformTail)) return labels[0];
+  if (labels.length >= 2) return labels[labels.length - 2];
+  return labels[0];
+}
 function slugCandidates(employer) {
-  const norm = normalizeEmployerName(employer);
+  const brand = employerBrandToken(employer);
+  const norm = normalizeEmployerName(brand || employer);
   const out = [];
   const pushCand = (c) => { if (c && !out.includes(c)) out.push(c); };
+  if (brand) pushCand(brand);
   if (CURATED_SLUGS[norm]) pushCand(CURATED_SLUGS[norm]);
   pushCand(norm.replace(/\s+/g, ""));
   pushCand(norm.replace(/\s+/g, "-"));
@@ -444,18 +465,20 @@ async function fetchJSON(url) {
 /* Try Greenhouse → Lever → Ashby for each slug candidate. First board that
    answers 200 with a jobs array wins. Returns { source, slug, postings } or null. */
 async function resolveBoard(employer) {
+  const brand = employerBrandToken(employer);
+  const displayName = brand? brand.charAt(0).toUpperCase() + brand.slice(1) : employer;
   for (const slug of slugCandidates(employer)) {
     const gh = await fetchJSON("https://boards-api.greenhouse.io/v1/boards/" + encodeURIComponent(slug) + "/jobs");
     if (gh && Array.isArray(gh.jobs)) {
       return { source: "Greenhouse", slug, postings: gh.jobs.map((j) => ({
-        company: employer, title: j.title || "", location: (j.location && j.location.name) || "",
+        company: displayName, title: j.title || "", location: (j.location && j.location.name) || "",
         url: j.absolute_url || "", description: "", atsId: j.id,
         posted_at: toISODate(j.created_at || j.updated_at) })) };
     }
     const lv = await fetchJSON("https://api.lever.co/v0/postings/" + encodeURIComponent(slug) + "?mode=json");
     if (Array.isArray(lv)) {
       return { source: "Lever", slug, postings: lv.map((p) => ({
-        company: employer, title: p.text || "", location: (p.categories && p.categories.location) || "",
+        company: displayName, title: p.text || "", location: (p.categories && p.categories.location) || "",
         url: p.hostedUrl || p.applyUrl || "",
         description: p.descriptionPlain || htmlToText(p.description || ""),
         posted_at: toISODate(p.createdAt) })) };
@@ -463,7 +486,7 @@ async function resolveBoard(employer) {
     const ab = await fetchJSON("https://api.ashbyhq.com/posting-api/job-board/" + encodeURIComponent(slug));
     if (ab && Array.isArray(ab.jobs)) {
       return { source: "Ashby", slug, postings: ab.jobs.map((j) => ({
-        company: employer, title: j.title || "", location: j.locationName || (j.location && j.location.name) || "",
+        company: displayName, title: j.title || "", location: j.locationName || (j.location && j.location.name) || "",
         url: j.jobUrl || j.applyUrl || "",
         description: j.descriptionPlain || htmlToText(j.descriptionHtml || ""),
         posted_at: toISODate(j.publishedAt || j.createdAt) })) };
